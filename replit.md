@@ -6,12 +6,20 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
+**Structured Discovery System (Latest)**
+- Replaced fuzzy keyword matching with canonical 8-key discovery tracking
+- Defined 8 story elements: SHIPWRECK, FAMILY_DIED, STRANDED_ISLAND, CANNIBALISM, DECEPTION, RESCUED, ALBATROSS_REVEAL, SUICIDE
+- Completion requires 7 of 8 discoveries PLUS 3 critical keys (DECEPTION, ALBATROSS_REVEAL, CANNIBALISM)
+- Added progress display showing "Discoveries: X/8" in UI header
+- Implemented deduplication via Set to prevent repeat discoveries
+- Improved OpenAI prompt with stricter examples to prevent over-awarding
+- All features architect-reviewed and tested end-to-end with successful validation
+
 **OpenAI Integration Improvements**
 - Added conversation history to OpenAI requests for context-aware responses
 - Implemented response normalization to handle format variations
 - Enhanced error handling with user-friendly messages
-- Improved game completion logic with flexible keyword matching
-- All features tested end-to-end with successful validation
+- Structured JSON responses with discovery keys and labels
 
 ## User Preferences
 
@@ -73,9 +81,10 @@ Preferred communication style: Simple, everyday language.
 - Conversation history (last 10 exchanges) sent for context-aware follow-up questions
 - Strict response format enforced via JSON schema validation
 - Response normalization handles case variations (YES/Yes/yes → YES)
-- Discovery detection logic identifies when players uncover key plot points
+- Structured discovery system with 8 canonical keys (SHIPWRECK, FAMILY_DIED, etc.)
+- Discovery objects include key (from canonical set) and label (user-friendly description)
 - Complete puzzle backstory embedded in system prompt for consistent responses
-- Flexible keyword matching in completion logic (6+ key phrase matches triggers win)
+- Completion logic requires 7 of 8 discoveries AND all 3 critical keys (DECEPTION, ALBATROSS_REVEAL, CANNIBALISM)
 - Differentiated error handling: 400 for validation, 500 for AI/server errors
 
 ### Data Storage
@@ -96,7 +105,8 @@ Preferred communication style: Simple, everyday language.
 {
   id: string,
   messages: GameMessage[],
-  discoveries: string[],
+  discoveries: Discovery[],  // Structured objects with key and label
+  discoveredKeys: Set<DiscoveryKey>,  // Deduplication tracking
   isComplete: boolean,
   createdAt: number
 }
