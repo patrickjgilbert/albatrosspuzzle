@@ -9,12 +9,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
+import type { Discovery } from "@shared/schema";
 
 interface GameCompletionModalProps {
   open: boolean;
   onClose: () => void;
   onPlayAgain: () => void;
-  discoveries: string[];
+  discoveries: Discovery[];
 }
 
 export default function GameCompletionModal({
@@ -49,7 +50,7 @@ export default function GameCompletionModal({
           <div className="space-y-2">
             {discoveries.map((discovery, index) => (
               <motion.div
-                key={index}
+                key={discovery.key}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -57,7 +58,7 @@ export default function GameCompletionModal({
                 data-testid={`discovery-${index}`}
               >
                 <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-foreground">{discovery}</p>
+                <p className="text-sm text-foreground">{discovery.label}</p>
               </motion.div>
             ))}
           </div>

@@ -13,7 +13,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { AskQuestionResponse } from "@shared/schema";
+import type { AskQuestionResponse, Discovery } from "@shared/schema";
 
 interface Message {
   id: number;
@@ -37,7 +37,8 @@ export default function Game() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
-  const [discoveries, setDiscoveries] = useState<string[]>([]);
+  const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
+  const [progress, setProgress] = useState({ total: 8, discovered: 0 });
   const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
@@ -92,13 +93,14 @@ export default function Game() {
 
       setMessages((prev) => [...prev, systemMessage]);
       setIsTyping(false);
+      setProgress(data.progress);
 
       if (data.discovery) {
         setTimeout(() => {
           const discoveryMessage: Message = {
             id: messageIdCounter.current++,
             type: "discovery",
-            content: data.discovery!,
+            content: data.discovery.label,
           };
           setMessages((prev) => [...prev, discoveryMessage]);
           setDiscoveries(data.discoveries);
@@ -156,6 +158,7 @@ export default function Game() {
       setSessionId(data.sessionId);
       setMessages([]);
       setDiscoveries([]);
+      setProgress({ total: 8, discovered: 0 });
       setGameComplete(false);
       messageIdCounter.current = 0;
     } catch (error) {
@@ -171,9 +174,16 @@ export default function Game() {
   return (
     <div className="flex flex-col h-screen bg-background">
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border flex-shrink-0">
-        <h1 className="text-lg font-semibold" data-testid="text-title">
-          The Albatross Puzzle
-        </h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-lg font-semibold" data-testid="text-title">
+            The Albatross Puzzle
+          </h1>
+          {progress.discovered > 0 && (
+            <div className="text-sm text-muted-foreground" data-testid="text-progress">
+              Discoveries: {progress.discovered}/{progress.total}
+            </div>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <Popover>
             <PopoverTrigger asChild>

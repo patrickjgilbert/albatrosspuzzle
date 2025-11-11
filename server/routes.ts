@@ -1,7 +1,16 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { askQuestionSchema, type AskQuestionResponse } from "@shared/schema";
+import { 
+  askQuestionSchema, 
+  type AskQuestionResponse, 
+  type DiscoveryKey,
+  type Discovery,
+  DISCOVERY_KEYS,
+  REQUIRED_DISCOVERY_KEYS,
+  MIN_REQUIRED_DISCOVERIES,
+  CRITICAL_DISCOVERY_KEYS 
+} from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
 
@@ -24,34 +33,57 @@ Rules for answering:
 3. Answer "NO" if the question's implication is false according to the backstory
 4. Answer "DOES_NOT_MATTER" if the detail asked about is not relevant to solving the puzzle (e.g., the man's race, age, appearance, the restaurant's location, etc.)
 5. Be truthful but don't volunteer extra information beyond what is asked
-6. If the question reveals a key plot point, identify what discovery they made
+6. If the question reveals a key plot point, return the discovery key and label
 
 Respond ONLY with valid JSON in this exact format:
 {
   "answer": "YES" | "NO" | "DOES_NOT_MATTER",
   "explanation": "Brief explanation (1-2 sentences max)",
-  "discovery": null | "Brief statement of the key discovery made (e.g., 'The man had a family who died in the shipwreck')"
+  "discoveryKey": null | "SHIPWRECK" | "FAMILY_DIED" | "STRANDED_ISLAND" | "CANNIBALISM" | "DECEPTION" | "RESCUED" | "ALBATROSS_REVEAL" | "SUICIDE",
+  "discoveryLabel": null | "Natural language description of the discovery"
 }
 
-Major discoveries to recognize (when directly asked or strongly implied):
-- The man was on a ship/boat/cruise
-- There was a shipwreck/disaster/accident at sea
-- The man had a family (wife and/or children)
-- His family died/perished in the tragedy
-- Survivors were stranded on an island
-- Other survivors resorted to cannibalism
-- The man was deceived/lied to about what he was eating
-- He was told the meat was albatross
-- He unknowingly ate human flesh
-- Tasting real albatross soup revealed the truth/deception
-- He killed himself from guilt/shame
+Discovery keys and when to use them (ONLY when directly asked or strongly implied):
+- SHIPWRECK: When they discover there was a ship/boat/cruise that wrecked or sank at sea
+- FAMILY_DIED: When they discover the man's family (wife/children) DIED in the disaster (not just that he had a family)
+- STRANDED_ISLAND: When they discover survivors were stranded on a desert island
+- CANNIBALISM: When they discover the survivors ate human flesh/remains
+- DECEPTION: When they discover the man was lied to/deceived about what he was eating
+- RESCUED: When they discover the survivors were eventually rescued and returned to civilization
+- ALBATROSS_REVEAL: When they discover that tasting real albatross at the restaurant revealed the truth/deception
+- SUICIDE: When they discover the man killed himself from guilt/shame
 
-Only include a discovery when a question directly or clearly implies one of these key plot points.`;
+IMPORTANT: Only include a discovery when the question DIRECTLY explores that specific element. Do NOT award multiple discoveries for a single question. Be strict - the player must ask about each element separately to discover it. Examples:
+- "Was there a shipwreck?" → SHIPWRECK
+- "Did his family die?" or "Did his family survive?" (answered NO) → FAMILY_DIED
+- "Were they stranded on an island?" → STRANDED_ISLAND
+- "Did they eat human flesh?" or "Was there cannibalism?" → CANNIBALISM
+- "Was he lied to about the food?" or "Was he deceived?" → DECEPTION
+- "Were they rescued?" → RESCUED
+- "Did the restaurant soup reveal the truth?" → ALBATROSS_REVEAL
+- "Did he kill himself?" → SUICIDE
+
+Do NOT award discoveries for vague or partial questions:
+- "Did the man have a family?" → NO DISCOVERY (doesn't confirm they died)
+- "Did something bad happen at sea?" → NO DISCOVERY (too vague)
+- "Did he eat something?" → NO DISCOVERY (doesn't specify what)
+
+Be strict and precise with discovery awards.`;
 
 const OpenAIResponseSchema = z.object({
   answer: z.enum(["YES", "NO", "DOES_NOT_MATTER"]),
   explanation: z.string(),
-  discovery: z.string().nullable(),
+  discoveryKey: z.enum([
+    "SHIPWRECK",
+    "FAMILY_DIED", 
+    "STRANDED_ISLAND",
+    "CANNIBALISM",
+    "DECEPTION",
+    "RESCUED",
+    "ALBATROSS_REVEAL",
+    "SUICIDE"
+  ]).nullable(),
+  discoveryLabel: z.string().nullable(),
 });
 
 function normalizeAnswer(answer: string): "YES" | "NO" | "DOES NOT MATTER" {
@@ -127,7 +159,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const answer = normalizeAnswer(validated.data.answer);
       const explanation = validated.data.explanation;
-      const discovery = validated.data.discovery;
+      const discoveryKey = validated.data.discoveryKey;
+      const discoveryLabel = validated.data.discoveryLabel;
 
       const playerMessage = {
         id: session.messages.length,
@@ -146,32 +179,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       session.messages.push(playerMessage, systemMessage);
 
-      if (discovery) {
+      let newDiscovery: Discovery | undefined;
+      if (discoveryKey && discoveryLabel && !session.discoveredKeys.has(discoveryKey)) {
+        newDiscovery = {
+          key: discoveryKey as DiscoveryKey,
+          label: discoveryLabel,
+          timestamp: Date.now(),
+        };
+
         const discoveryMessage = {
           id: session.messages.length,
           type: "discovery" as const,
-          content: discovery,
+          content: discoveryLabel,
           timestamp: Date.now(),
         };
         session.messages.push(discoveryMessage);
-        session.discoveries.push(discovery);
+        session.discoveries.push(newDiscovery);
+        session.discoveredKeys.add(discoveryKey as DiscoveryKey);
       }
 
-      const keyPhrases = [
-        "ship", "boat", "wreck", "disaster",
-        "family", "wife", "children", "died", "death", "perish",
-        "island", "strand",
-        "cannibal", "human", "flesh", "people",
-        "decei", "lie", "told",
-        "albatross",
-        "guilt", "realize", "truth"
-      ];
+      // Check if enough discoveries have been made AND all critical keys are found
+      const discoveryCount = session.discoveredKeys.size;
+      const allCriticalKeysFound = CRITICAL_DISCOVERY_KEYS.every(
+        key => session.discoveredKeys.has(key)
+      );
       
-      const discoveredCount = keyPhrases.filter(phrase =>
-        session!.discoveries.some(d => d.toLowerCase().includes(phrase))
-      ).length;
-
-      if (discoveredCount >= 6) {
+      if (discoveryCount >= MIN_REQUIRED_DISCOVERIES && allCriticalKeysFound) {
         session.isComplete = true;
       }
 
@@ -181,9 +214,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sessionId: session.id,
         response: answer,
         content: explanation,
-        discovery: discovery || undefined,
+        discovery: newDiscovery,
         isComplete: session.isComplete,
         discoveries: session.discoveries,
+        discoveredKeys: Array.from(session.discoveredKeys),
+        progress: {
+          total: REQUIRED_DISCOVERY_KEYS.length,
+          discovered: session.discoveredKeys.size,
+        },
       };
 
       res.json(response);

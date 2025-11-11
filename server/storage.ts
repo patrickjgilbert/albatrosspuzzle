@@ -45,6 +45,7 @@ export class MemStorage implements IStorage {
       id,
       messages: [],
       discoveries: [],
+      discoveredKeys: new Set(),
       isComplete: false,
       createdAt: Date.now(),
     };
