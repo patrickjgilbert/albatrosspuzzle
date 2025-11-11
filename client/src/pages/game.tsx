@@ -1,0 +1,302 @@
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { RotateCcw, HelpCircle as HelpIcon } from "lucide-react";
+import PuzzleStatement from "@/components/PuzzleStatement";
+import ChatMessage, { type MessageType, type ResponseType } from "@/components/ChatMessage";
+import TypingIndicator from "@/components/TypingIndicator";
+import ChatInput from "@/components/ChatInput";
+import GameCompletionModal from "@/components/GameCompletionModal";
+import ThemeToggle from "@/components/ThemeToggle";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
+interface Message {
+  id: number;
+  type: MessageType;
+  content: string;
+  response?: ResponseType;
+}
+
+const PUZZLE_STATEMENT =
+  "A man walks into a restaurant, orders the albatross soup, takes one bite of it, puts his spoon down, walks out of the restaurant, and shoots himself.";
+
+const SAMPLE_QUESTIONS = [
+  "Did the man have a family?",
+  "Was there a shipwreck?",
+  "Did he eat something on an island?",
+  "Was he told the meat was albatross?",
+  "Did his family die?",
+];
+
+export default function Game() {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [gameComplete, setGameComplete] = useState(false);
+  const [discoveries, setDiscoveries] = useState<string[]>([]);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageIdCounter = useRef(0);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  const handleSubmitQuestion = (question: string) => {
+    const playerMessage: Message = {
+      id: messageIdCounter.current++,
+      type: "player",
+      content: question,
+    };
+
+    setMessages((prev) => [...prev, playerMessage]);
+    setIsTyping(true);
+
+    setTimeout(() => {
+      const { response, content, discovery } = generateResponse(question);
+
+      const systemMessage: Message = {
+        id: messageIdCounter.current++,
+        type: "system",
+        content,
+        response,
+      };
+
+      setMessages((prev) => [...prev, systemMessage]);
+      setIsTyping(false);
+
+      if (discovery) {
+        setTimeout(() => {
+          const discoveryMessage: Message = {
+            id: messageIdCounter.current++,
+            type: "discovery",
+            content: discovery,
+          };
+          setMessages((prev) => [...prev, discoveryMessage]);
+          setDiscoveries((prev) => [...prev, discovery]);
+
+          checkGameCompletion([...discoveries, discovery]);
+        }, 500);
+      }
+    }, 1500);
+  };
+
+  const generateResponse = (question: string): {
+    response: ResponseType;
+    content: string;
+    discovery?: string;
+  } => {
+    const lowerQ = question.toLowerCase();
+
+    if (lowerQ.includes("family") || lowerQ.includes("wife") || lowerQ.includes("children")) {
+      return {
+        response: "YES",
+        content: "Yes, he had a wife and children.",
+        discovery: "The man had a family who were with him",
+      };
+    }
+
+    if (lowerQ.includes("shipwreck") || lowerQ.includes("ship") || lowerQ.includes("boat")) {
+      return {
+        response: "YES",
+        content: "Yes, there was a shipwreck.",
+        discovery: "They were on a ship that had a shipwreck",
+      };
+    }
+
+    if (lowerQ.includes("island") || lowerQ.includes("stranded")) {
+      return {
+        response: "YES",
+        content: "Yes, they were stranded on an island.",
+        discovery: "The survivors were stranded on a desert island",
+      };
+    }
+
+    if (lowerQ.includes("survive") && (lowerQ.includes("family") || lowerQ.includes("wife"))) {
+      return {
+        response: "NO",
+        content: "No, his family did not survive.",
+        discovery: "His family died in the shipwreck",
+      };
+    }
+
+    if (lowerQ.includes("cannibal") || lowerQ.includes("human") || lowerQ.includes("people")) {
+      return {
+        response: "YES",
+        content: "Yes, cannibalism was involved.",
+        discovery: "The survivors resorted to cannibalism",
+      };
+    }
+
+    if (lowerQ.includes("told") || lowerQ.includes("lie") || lowerQ.includes("deceive")) {
+      return {
+        response: "YES",
+        content: "Yes, he was lied to about what he was eating.",
+        discovery: "He was deceived about what the meat really was",
+      };
+    }
+
+    if (lowerQ.includes("albatross") && lowerQ.includes("real")) {
+      return {
+        response: "NO",
+        content: "No, it wasn't real albatross on the island.",
+        discovery: "The 'albatross' on the island was actually human flesh",
+      };
+    }
+
+    if (lowerQ.includes("realize") || lowerQ.includes("discover") || lowerQ.includes("taste")) {
+      return {
+        response: "YES",
+        content: "Yes, he realized the truth when he tasted real albatross.",
+        discovery: "Tasting real albatross made him realize what he had actually eaten",
+      };
+    }
+
+    if (lowerQ.includes("guilt") || lowerQ.includes("shame")) {
+      return {
+        response: "YES",
+        content: "Yes, he felt overwhelming guilt.",
+        discovery: "The guilt from unknowingly eating human flesh was unbearable",
+      };
+    }
+
+    if (
+      lowerQ.includes("race") ||
+      lowerQ.includes("caucasian") ||
+      lowerQ.includes("ethnicity") ||
+      lowerQ.includes("color")
+    ) {
+      return {
+        response: "DOES NOT MATTER",
+        content: "This detail is not relevant to solving the puzzle.",
+      };
+    }
+
+    if (lowerQ.includes("age") || lowerQ.includes("old") || lowerQ.includes("young")) {
+      return {
+        response: "DOES NOT MATTER",
+        content: "The man's age is not important to the story.",
+      };
+    }
+
+    const yesKeywords = ["die", "dead", "death", "kill", "murder"];
+    if (yesKeywords.some((kw) => lowerQ.includes(kw)) && lowerQ.includes("family")) {
+      return {
+        response: "YES",
+        content: "Yes, that's related to the story.",
+      };
+    }
+
+    const randomYes = Math.random() > 0.5;
+    return {
+      response: randomYes ? "YES" : "NO",
+      content: randomYes
+        ? "Yes, that's connected to the mystery."
+        : "No, that's not quite right.",
+    };
+  };
+
+  const checkGameCompletion = (currentDiscoveries: string[]) => {
+    const keyPhrases = ["shipwreck", "family died", "cannibalism", "deceived", "human flesh"];
+    const discoveredCount = keyPhrases.filter((phrase) =>
+      currentDiscoveries.some((d) => d.toLowerCase().includes(phrase))
+    ).length;
+
+    if (discoveredCount >= 4) {
+      setTimeout(() => {
+        setGameComplete(true);
+      }, 1000);
+    }
+  };
+
+  const handleReset = () => {
+    setMessages([]);
+    setDiscoveries([]);
+    setGameComplete(false);
+    messageIdCounter.current = 0;
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border flex-shrink-0">
+        <h1 className="text-lg font-semibold" data-testid="text-title">
+          The Albatross Puzzle
+        </h1>
+        <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" data-testid="button-help">
+                <HelpIcon className="w-5 h-5" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" data-testid="popover-help">
+              <div className="space-y-3">
+                <h3 className="font-semibold">Need a hint?</h3>
+                <p className="text-sm text-muted-foreground">
+                  Try asking questions like:
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {SAMPLE_QUESTIONS.map((q, i) => (
+                    <li key={i} className="text-muted-foreground">
+                      • {q}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </PopoverContent>
+          </Popover>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleReset}
+            data-testid="button-reset"
+          >
+            <RotateCcw className="w-5 h-5" />
+          </Button>
+          <ThemeToggle />
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
+          <PuzzleStatement statement={PUZZLE_STATEMENT} />
+
+          {messages.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground text-sm">
+                Start asking yes-or-no questions to uncover the mystery...
+              </p>
+            </div>
+          )}
+
+          {messages.map((message) => (
+            <ChatMessage
+              key={message.id}
+              type={message.type}
+              content={message.content}
+              response={message.response}
+            />
+          ))}
+
+          {isTyping && <TypingIndicator />}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </main>
+
+      <ChatInput onSubmit={handleSubmitQuestion} disabled={isTyping} />
+
+      <GameCompletionModal
+        open={gameComplete}
+        onClose={() => setGameComplete(false)}
+        onPlayAgain={handleReset}
+        discoveries={discoveries}
+      />
+    </div>
+  );
+}
