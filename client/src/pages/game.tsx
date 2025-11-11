@@ -62,25 +62,20 @@ export default function Game() {
     setIsTyping(true);
 
     try {
-      const requestBody = {
-        sessionId,
-        question,
-      };
-      console.log("Sending request:", requestBody);
-      
       const response = await fetch("/api/ask", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          sessionId,
+          question,
+        }),
       });
 
       const data = await response.json();
-      console.log("Received response:", { status: response.status, data });
 
       if (!response.ok) {
-        console.error("Request failed:", data);
         throw new Error(JSON.stringify(data));
       }
 
