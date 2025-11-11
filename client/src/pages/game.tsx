@@ -7,11 +7,13 @@ import TypingIndicator from "@/components/TypingIndicator";
 import ChatInput from "@/components/ChatInput";
 import GameCompletionModal from "@/components/GameCompletionModal";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import type { AskQuestionResponse } from "@shared/schema";
 
 interface Message {
   id: number;
@@ -36,8 +38,10 @@ export default function Game() {
   const [isTyping, setIsTyping] = useState(false);
   const [gameComplete, setGameComplete] = useState(false);
   const [discoveries, setDiscoveries] = useState<string[]>([]);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
+  const { toast } = useToast();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -47,7 +51,7 @@ export default function Game() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const handleSubmitQuestion = (question: string) => {
+  const handleSubmitQuestion = async (question: string) => {
     const playerMessage: Message = {
       id: messageIdCounter.current++,
       type: "player",
@@ -57,168 +61,111 @@ export default function Game() {
     setMessages((prev) => [...prev, playerMessage]);
     setIsTyping(true);
 
-    setTimeout(() => {
-      const { response, content, discovery } = generateResponse(question);
+    try {
+      const response = await fetch("/api/ask", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId,
+          question,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(JSON.stringify(data));
+      }
+
+      if (!sessionId) {
+        setSessionId(data.sessionId);
+      }
 
       const systemMessage: Message = {
         id: messageIdCounter.current++,
         type: "system",
-        content,
-        response,
+        content: data.content,
+        response: data.response,
       };
 
       setMessages((prev) => [...prev, systemMessage]);
       setIsTyping(false);
 
-      if (discovery) {
+      if (data.discovery) {
         setTimeout(() => {
           const discoveryMessage: Message = {
             id: messageIdCounter.current++,
             type: "discovery",
-            content: discovery,
+            content: data.discovery!,
           };
           setMessages((prev) => [...prev, discoveryMessage]);
-          setDiscoveries((prev) => [...prev, discovery]);
+          setDiscoveries(data.discoveries);
 
-          checkGameCompletion([...discoveries, discovery]);
+          if (data.isComplete) {
+            setTimeout(() => {
+              setGameComplete(true);
+            }, 1000);
+          }
         }, 500);
+      } else if (data.isComplete) {
+        setTimeout(() => {
+          setGameComplete(true);
+        }, 1000);
       }
-    }, 1500);
-  };
-
-  const generateResponse = (question: string): {
-    response: ResponseType;
-    content: string;
-    discovery?: string;
-  } => {
-    const lowerQ = question.toLowerCase();
-
-    if (lowerQ.includes("family") || lowerQ.includes("wife") || lowerQ.includes("children")) {
-      return {
-        response: "YES",
-        content: "Yes, he had a wife and children.",
-        discovery: "The man had a family who were with him",
-      };
-    }
-
-    if (lowerQ.includes("shipwreck") || lowerQ.includes("ship") || lowerQ.includes("boat")) {
-      return {
-        response: "YES",
-        content: "Yes, there was a shipwreck.",
-        discovery: "They were on a ship that had a shipwreck",
-      };
-    }
-
-    if (lowerQ.includes("island") || lowerQ.includes("stranded")) {
-      return {
-        response: "YES",
-        content: "Yes, they were stranded on an island.",
-        discovery: "The survivors were stranded on a desert island",
-      };
-    }
-
-    if (lowerQ.includes("survive") && (lowerQ.includes("family") || lowerQ.includes("wife"))) {
-      return {
-        response: "NO",
-        content: "No, his family did not survive.",
-        discovery: "His family died in the shipwreck",
-      };
-    }
-
-    if (lowerQ.includes("cannibal") || lowerQ.includes("human") || lowerQ.includes("people")) {
-      return {
-        response: "YES",
-        content: "Yes, cannibalism was involved.",
-        discovery: "The survivors resorted to cannibalism",
-      };
-    }
-
-    if (lowerQ.includes("told") || lowerQ.includes("lie") || lowerQ.includes("deceive")) {
-      return {
-        response: "YES",
-        content: "Yes, he was lied to about what he was eating.",
-        discovery: "He was deceived about what the meat really was",
-      };
-    }
-
-    if (lowerQ.includes("albatross") && lowerQ.includes("real")) {
-      return {
-        response: "NO",
-        content: "No, it wasn't real albatross on the island.",
-        discovery: "The 'albatross' on the island was actually human flesh",
-      };
-    }
-
-    if (lowerQ.includes("realize") || lowerQ.includes("discover") || lowerQ.includes("taste")) {
-      return {
-        response: "YES",
-        content: "Yes, he realized the truth when he tasted real albatross.",
-        discovery: "Tasting real albatross made him realize what he had actually eaten",
-      };
-    }
-
-    if (lowerQ.includes("guilt") || lowerQ.includes("shame")) {
-      return {
-        response: "YES",
-        content: "Yes, he felt overwhelming guilt.",
-        discovery: "The guilt from unknowingly eating human flesh was unbearable",
-      };
-    }
-
-    if (
-      lowerQ.includes("race") ||
-      lowerQ.includes("caucasian") ||
-      lowerQ.includes("ethnicity") ||
-      lowerQ.includes("color")
-    ) {
-      return {
-        response: "DOES NOT MATTER",
-        content: "This detail is not relevant to solving the puzzle.",
-      };
-    }
-
-    if (lowerQ.includes("age") || lowerQ.includes("old") || lowerQ.includes("young")) {
-      return {
-        response: "DOES NOT MATTER",
-        content: "The man's age is not important to the story.",
-      };
-    }
-
-    const yesKeywords = ["die", "dead", "death", "kill", "murder"];
-    if (yesKeywords.some((kw) => lowerQ.includes(kw)) && lowerQ.includes("family")) {
-      return {
-        response: "YES",
-        content: "Yes, that's related to the story.",
-      };
-    }
-
-    const randomYes = Math.random() > 0.5;
-    return {
-      response: randomYes ? "YES" : "NO",
-      content: randomYes
-        ? "Yes, that's connected to the mystery."
-        : "No, that's not quite right.",
-    };
-  };
-
-  const checkGameCompletion = (currentDiscoveries: string[]) => {
-    const keyPhrases = ["shipwreck", "family died", "cannibalism", "deceived", "human flesh"];
-    const discoveredCount = keyPhrases.filter((phrase) =>
-      currentDiscoveries.some((d) => d.toLowerCase().includes(phrase))
-    ).length;
-
-    if (discoveredCount >= 4) {
-      setTimeout(() => {
-        setGameComplete(true);
-      }, 1000);
+    } catch (error) {
+      console.error("Error submitting question:", error);
+      setIsTyping(false);
+      
+      let errorMessage = "Failed to process your question. Please try again.";
+      if (error instanceof Error) {
+        try {
+          const errorData = JSON.parse(error.message);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Use default message
+        }
+      }
+      
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
     }
   };
 
-  const handleReset = () => {
-    setMessages([]);
-    setDiscoveries([]);
-    setGameComplete(false);
-    messageIdCounter.current = 0;
+  const handleReset = async () => {
+    try {
+      const response = await fetch("/api/reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to reset game");
+      }
+
+      const data = await response.json();
+      setSessionId(data.sessionId);
+      setMessages([]);
+      setDiscoveries([]);
+      setGameComplete(false);
+      messageIdCounter.current = 0;
+    } catch (error) {
+      console.error("Error resetting game:", error);
+      toast({
+        title: "Error",
+        description: "Failed to reset game. Please refresh the page.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
