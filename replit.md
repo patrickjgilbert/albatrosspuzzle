@@ -4,6 +4,15 @@
 
 An interactive web-based lateral thinking puzzle game where players solve the classic "Albatross Soup" mystery through yes/no questions. The application uses AI (OpenAI) to act as a game master, responding to player questions and tracking their progress toward discovering the dark truth behind the puzzle. Players engage in a chat-like interface that progressively reveals key story elements as they ask the right questions.
 
+## Recent Changes (November 2025)
+
+**OpenAI Integration Improvements**
+- Added conversation history to OpenAI requests for context-aware responses
+- Implemented response normalization to handle format variations
+- Enhanced error handling with user-friendly messages
+- Improved game completion logic with flexible keyword matching
+- All features tested end-to-end with successful validation
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -44,21 +53,30 @@ Preferred communication style: Simple, everyday language.
 **API Design**
 - RESTful endpoints for game interactions
 - JSON request/response format with Zod schema validation
-- Single main endpoint for asking questions (`POST /api/ask`) that handles session creation and updates
+- Primary endpoint: `POST /api/ask` - handles question answering with session management
+- Reset endpoint: `POST /api/reset` - creates new game session
 
 **Game Logic Flow**
 1. Client sends question with optional sessionId
-2. Server validates question against schema
-3. Question forwarded to OpenAI API with system prompt containing full puzzle backstory
-4. AI responds with structured JSON (answer, explanation, optional discovery)
-5. Server updates session state and returns response to client
-6. Client renders response and any discoveries, scrolls to bottom
+2. Server validates question against schema using Zod
+3. Server retrieves or creates game session
+4. Last 10 conversation exchanges sent to OpenAI for context
+5. OpenAI responds with structured JSON (answer, explanation, optional discovery)
+6. Response validated and normalized (handles case/format variations)
+7. Server updates session state with messages and discoveries
+8. Game completion checked based on discovery keywords
+9. Response returned to client with session state
+10. Client renders response with animations and checks for completion
 
 **AI Integration Strategy**
-- OpenAI GPT model acts as game master with detailed system prompt
-- Strict response format enforced: YES/NO/DOES_NOT_MATTER with explanation
+- OpenAI GPT-4o-mini model acts as game master with detailed system prompt
+- Conversation history (last 10 exchanges) sent for context-aware follow-up questions
+- Strict response format enforced via JSON schema validation
+- Response normalization handles case variations (YES/Yes/yes → YES)
 - Discovery detection logic identifies when players uncover key plot points
 - Complete puzzle backstory embedded in system prompt for consistent responses
+- Flexible keyword matching in completion logic (6+ key phrase matches triggers win)
+- Differentiated error handling: 400 for validation, 500 for AI/server errors
 
 ### Data Storage
 
