@@ -36,7 +36,7 @@ export interface GameSession {
 
 // API request/response schemas
 export const askQuestionSchema = z.object({
-  sessionId: z.string().optional(),
+  sessionId: z.string().nullable().optional(),
   question: z.string().min(1).max(500),
 });
 
