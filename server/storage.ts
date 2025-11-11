@@ -1,20 +1,25 @@
-import { type User, type InsertUser } from "@shared/schema";
+import { type User, type InsertUser, type GameSession } from "@shared/schema";
 import { randomUUID } from "crypto";
-
-// modify the interface with any CRUD methods
-// you might need
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Game session methods
+  createGameSession(): Promise<GameSession>;
+  getGameSession(id: string): Promise<GameSession | undefined>;
+  updateGameSession(id: string, session: GameSession): Promise<GameSession>;
+  deleteGameSession(id: string): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
+  private gameSessions: Map<string, GameSession>;
 
   constructor() {
     this.users = new Map();
+    this.gameSessions = new Map();
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -32,6 +37,32 @@ export class MemStorage implements IStorage {
     const user: User = { ...insertUser, id };
     this.users.set(id, user);
     return user;
+  }
+
+  async createGameSession(): Promise<GameSession> {
+    const id = randomUUID();
+    const session: GameSession = {
+      id,
+      messages: [],
+      discoveries: [],
+      isComplete: false,
+      createdAt: Date.now(),
+    };
+    this.gameSessions.set(id, session);
+    return session;
+  }
+
+  async getGameSession(id: string): Promise<GameSession | undefined> {
+    return this.gameSessions.get(id);
+  }
+
+  async updateGameSession(id: string, session: GameSession): Promise<GameSession> {
+    this.gameSessions.set(id, session);
+    return session;
+  }
+
+  async deleteGameSession(id: string): Promise<void> {
+    this.gameSessions.delete(id);
   }
 }
 
