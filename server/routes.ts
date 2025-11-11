@@ -69,8 +69,10 @@ function normalizeAnswer(answer: string): "YES" | "NO" | "DOES NOT MATTER" {
 export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ask", async (req, res) => {
     try {
+      console.log("Received request body:", JSON.stringify(req.body));
       const validatedData = askQuestionSchema.parse(req.body);
       const { sessionId, question } = validatedData;
+      console.log("Validated question:", question);
 
       let session = sessionId ? await storage.getGameSession(sessionId) : null;
       
@@ -189,9 +191,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(response);
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("Validation error:", error.errors);
         return res.status(400).json({ 
           error: "Invalid request",
-          message: "Your question could not be processed. Please check your input."
+          message: "Your question could not be processed. Please check your input.",
+          details: error.errors
         });
       }
 
