@@ -32,9 +32,14 @@ Rules for answering:
 2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
 3. Answer "YES" if the question's implication is true according to the backstory
 4. Answer "NO" if the question's implication is false according to the backstory
-5. Answer "DOES_NOT_MATTER" if the detail asked about is not relevant to solving the puzzle (e.g., the man's race, age, appearance, the restaurant's location, etc.)
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle (e.g., the man's race, age, appearance, the restaurant's location, the weather, etc.)
 6. Be truthful but don't volunteer extra information beyond what is asked
 7. If the question reveals a key plot point, return the discovery key and label
+
+Important clarifications:
+- "Was there food on the island?" → NO (there was no food, which is why they resorted to cannibalism)
+- Questions about survival circumstances (food, water, shelter) are relevant and should be answered YES or NO based on the backstory
+- Only answer "DOES_NOT_MATTER" for details that have absolutely no bearing on the puzzle's solution
 
 Respond ONLY with valid JSON in this exact format:
 {
