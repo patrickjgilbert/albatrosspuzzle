@@ -64,18 +64,19 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
               : "bg-card text-card-foreground rounded-2xl rounded-bl-sm border border-card-border"
           }`}
         >
-          {response && !isPlayer && (
+          {response && !isPlayer ? (
             <Badge
               variant={getResponseBadgeVariant(response)}
-              className="text-xs font-bold px-2 py-0.5 mb-2"
+              className="text-xs font-bold px-2 py-0.5"
               data-testid={`badge-response-${response.toLowerCase().replace(/\s+/g, '-')}`}
             >
               {response}
             </Badge>
+          ) : (
+            <p className="text-base leading-relaxed" data-testid="text-message-content">
+              {content}
+            </p>
           )}
-          <p className="text-base leading-relaxed" data-testid="text-message-content">
-            {content}
-          </p>
         </div>
       </div>
     </motion.div>

@@ -64,11 +64,11 @@ IMPORTANT: Only include a discovery when the question DIRECTLY explores that spe
 - "Did he kill himself?" → SUICIDE
 
 Do NOT award discoveries for vague or partial questions:
-- "Did the man have a family?" → NO DISCOVERY (doesn't confirm they died)
+- "Did the man have a family?" → Answer YES, but NO DISCOVERY (having a family is true, but doesn't confirm they DIED)
 - "Did something bad happen at sea?" → NO DISCOVERY (too vague)
 - "Did he eat something?" → NO DISCOVERY (doesn't specify what)
 
-Be strict and precise with discovery awards.`;
+Be strict and precise with discovery awards. Answer truthfully based on the backstory, but only award discoveries when the specific element is directly confirmed.`;
 
 const OpenAIResponseSchema = z.object({
   answer: z.enum(["YES", "NO", "DOES_NOT_MATTER"]),
