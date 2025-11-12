@@ -3,7 +3,7 @@ import { Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 
 export type MessageType = "player" | "system" | "discovery";
-export type ResponseType = "YES" | "NO" | "DOES NOT MATTER" | "HINT";
+export type ResponseType = "YES" | "NO" | "DOES NOT MATTER" | "HINT" | "ONE QUESTION AT A TIME, PLEASE";
 
 interface ChatMessageProps {
   type: MessageType;
@@ -25,6 +25,8 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
       case "DOES NOT MATTER":
         return "outline";
       case "HINT":
+        return "outline";
+      case "ONE QUESTION AT A TIME, PLEASE":
         return "outline";
       default:
         return "secondary";
@@ -70,7 +72,7 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
               className="text-xs font-bold px-2 py-0.5"
               data-testid={`badge-response-${response.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              {response.charAt(0) + response.slice(1).toLowerCase()}
+              {response.split(' ').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
             </Badge>
           ) : (
             <p className="text-base leading-relaxed" data-testid="text-message-content">

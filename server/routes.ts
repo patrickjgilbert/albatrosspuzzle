@@ -28,16 +28,17 @@ Here is the complete backstory:
 ${PUZZLE_BACKSTORY}
 
 Rules for answering:
-1. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
-2. Answer "YES" if the question's implication is true according to the backstory
-3. Answer "NO" if the question's implication is false according to the backstory
-4. Answer "DOES_NOT_MATTER" if the detail asked about is not relevant to solving the puzzle (e.g., the man's race, age, appearance, the restaurant's location, etc.)
-5. Be truthful but don't volunteer extra information beyond what is asked
-6. If the question reveals a key plot point, return the discovery key and label
+1. If the player asks multiple questions at once (using "and", "or", or multiple question marks), answer with "MULTIPLE_QUESTIONS"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" if the detail asked about is not relevant to solving the puzzle (e.g., the man's race, age, appearance, the restaurant's location, etc.)
+6. Be truthful but don't volunteer extra information beyond what is asked
+7. If the question reveals a key plot point, return the discovery key and label
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "answer": "YES" | "NO" | "DOES_NOT_MATTER",
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "MULTIPLE_QUESTIONS",
   "explanation": "Brief explanation (1-2 sentences max)",
   "discoveryKey": null | "SHIPWRECK" | "FAMILY_DIED" | "STRANDED_ISLAND" | "CANNIBALISM" | "DECEPTION" | "RESCUED" | "ALBATROSS_REVEAL" | "SUICIDE",
   "discoveryLabel": null | "Natural language description of the discovery"
@@ -71,7 +72,7 @@ Do NOT award discoveries for vague or partial questions:
 Be strict and precise with discovery awards. Answer truthfully based on the backstory, but only award discoveries when the specific element is directly confirmed.`;
 
 const OpenAIResponseSchema = z.object({
-  answer: z.enum(["YES", "NO", "DOES_NOT_MATTER"]),
+  answer: z.enum(["YES", "NO", "DOES_NOT_MATTER", "MULTIPLE_QUESTIONS"]),
   explanation: z.string(),
   discoveryKey: z.enum([
     "SHIPWRECK",
@@ -86,13 +87,16 @@ const OpenAIResponseSchema = z.object({
   discoveryLabel: z.string().nullable(),
 });
 
-function normalizeAnswer(answer: string): "YES" | "NO" | "DOES NOT MATTER" {
+function normalizeAnswer(answer: string): "YES" | "NO" | "DOES NOT MATTER" | "ONE QUESTION AT A TIME, PLEASE" {
   const normalized = answer.toUpperCase().trim().replace(/[_\s-]+/g, "_");
   
   if (normalized === "YES") return "YES";
   if (normalized === "NO") return "NO";
   if (normalized === "DOES_NOT_MATTER" || normalized === "DOESN'T_MATTER" || normalized === "DOESNT_MATTER") {
     return "DOES NOT MATTER";
+  }
+  if (normalized === "MULTIPLE_QUESTIONS") {
+    return "ONE QUESTION AT A TIME, PLEASE";
   }
   
   throw new Error(`Invalid answer format: ${answer}`);

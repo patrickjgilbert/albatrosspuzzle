@@ -64,7 +64,7 @@ export interface GameMessage {
   id: number;
   type: "player" | "system" | "discovery";
   content: string;
-  response?: "YES" | "NO" | "DOES NOT MATTER" | "HINT";
+  response?: "YES" | "NO" | "DOES NOT MATTER" | "HINT" | "ONE QUESTION AT A TIME, PLEASE";
   timestamp: number;
 }
 
@@ -87,7 +87,7 @@ export type AskQuestionRequest = z.infer<typeof askQuestionSchema>;
 
 export interface AskQuestionResponse {
   sessionId: string;
-  response: "YES" | "NO" | "DOES NOT MATTER";
+  response: "YES" | "NO" | "DOES NOT MATTER" | "ONE QUESTION AT A TIME, PLEASE";
   content: string;
   discovery?: Discovery;
   isComplete: boolean;
