@@ -76,7 +76,7 @@ BASE discoveries (award for general questions):
 EVOLVED discoveries (award for specific questions):
 - VESSEL_SANK: "Did it sink?" "Was there a shipwreck?"
 - FAMILY_DIED: "Did they die?" "Did his family perish?"
-- STRANDED: "Were they stranded?" "Were they stuck?"
+- STRANDED: "Were they stranded?" "Were they stuck?" "Were there other survivors?" "Were there other people?"
 - CANNIBALISM: "Was there cannibalism?" "Did they eat people?" "Did survivors eat humans?"
 - DECEPTION: "Was he deceived?" "Was he lied to?"
 - RESCUED: "Were they rescued?" "Were they saved?" "Did they get off the island?" "Was he eventually rescued?"
@@ -225,10 +225,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           discoveryKey = "VESSEL_SANK";
           discoveryLabel = "The vessel sank at sea";
         }
-        // Check for stranded keywords
-        else if (/stranded|stuck|trapped|marooned|abandoned/i.test(questionLower)) {
+        // Check for stranded/survivors keywords
+        else if (/stranded|stuck|trapped|marooned|abandoned|other survivors|other people|others.*island|with.*survivor|survivor.*with/i.test(questionLower)) {
           discoveryKey = "STRANDED";
-          discoveryLabel = "They were stranded on the island";
+          discoveryLabel = "He was stranded with other survivors";
         }
         // Check for family death keywords
         else if (/family.*die|family.*dead|family.*killed|family.*perish/i.test(questionLower)) {

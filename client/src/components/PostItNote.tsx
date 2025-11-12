@@ -8,7 +8,7 @@ import familyImg from "@assets/generated_images/Stick_figure_family_sketch_2ef0c
 import islandImg from "@assets/generated_images/Island_sketch_2fdca28e.png";
 import hungerImg from "@assets/generated_images/Empty_plate_sketch_af202242.png";
 import cannibalismImg from "@assets/generated_images/Campfire_cooking_sketch_b841f84c.png";
-import strandedImg from "@assets/generated_images/Stranded_survivor_sketch_81329318.png";
+import strandedImg from "@assets/generated_images/Group_of_survivors_sketch_426b6291.png";
 import deceptionImg from "@assets/generated_images/Deception_mask_sketch_814d4d41.png";
 import rescueImg from "@assets/generated_images/Rescue_helicopter_sketch_b383b97a.png";
 import restaurantImg from "@assets/generated_images/Restaurant_soup_sketch_33ca3de3.png";
