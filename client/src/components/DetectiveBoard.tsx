@@ -23,8 +23,8 @@ export function DetectiveBoard({ discoveries }: DetectiveBoardProps) {
           {discoveries.map((discovery, index) => (
             <PostItNote
               key={discovery.key}
-              discoveryKey={discovery.key}
-              label={discovery.label}
+              discovery={discovery}
+              allDiscoveries={discoveries}
               index={index}
             />
           ))}

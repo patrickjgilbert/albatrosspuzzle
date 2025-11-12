@@ -7,9 +7,10 @@ import {
   type DiscoveryKey,
   type Discovery,
   DISCOVERY_KEYS,
-  REQUIRED_DISCOVERY_KEYS,
-  MIN_REQUIRED_DISCOVERIES,
-  CRITICAL_DISCOVERY_KEYS 
+  MIN_REQUIRED_TOPICS,
+  CRITICAL_TOPICS,
+  getDiscoveryTopic,
+  getDiscoveryStage
 } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -47,48 +48,62 @@ Respond ONLY with valid JSON in this exact format:
 {
   "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "MULTIPLE_QUESTIONS",
   "explanation": "Brief explanation (1-2 sentences max)",
-  "discoveryKey": null | "SHIPWRECK" | "FAMILY_DIED" | "STRANDED_ISLAND" | "CANNIBALISM" | "DECEPTION" | "RESCUED" | "ALBATROSS_REVEAL" | "SUICIDE",
+  "discoveryKey": null | one of the discovery keys listed below,
   "discoveryLabel": null | "Natural language description of the discovery"
 }
 
-Discovery keys and when to use them (ONLY when directly asked or strongly implied):
-- SHIPWRECK: When they discover there was a ship/boat/cruise that wrecked or sank at sea
-- FAMILY_DIED: When they discover the man's family (wife/children) DIED in the disaster (not just that he had a family)
-- STRANDED_ISLAND: When they discover survivors were stranded on a desert island
-- CANNIBALISM: When they discover the survivors ate human flesh/remains
-- DECEPTION: When they discover the man was lied to/deceived about what he was eating
-- RESCUED: When they discover the survivors were eventually rescued and returned to civilization
-- ALBATROSS_REVEAL: When they discover that tasting real albatross at the restaurant revealed the truth/deception
-- SUICIDE: When they discover the man killed himself from guilt/shame
+Progressive Discovery System - Award based on what the player SPECIFICALLY asked about:
 
-IMPORTANT: Only include a discovery when the question DIRECTLY explores that specific element. Do NOT award multiple discoveries for a single question. Be strict - the player must ask about each element separately to discover it. Examples:
-- "Was there a shipwreck?" → SHIPWRECK
-- "Did his family die?" or "Did his family survive?" (answered NO) → FAMILY_DIED
-- "Were they stranded on an island?" → STRANDED_ISLAND
-- "Did they eat human flesh?" or "Was there cannibalism?" → CANNIBALISM
-- "Was he lied to about the food?" or "Was he deceived?" → DECEPTION
-- "Were they rescued?" → RESCUED
-- "Did the restaurant soup reveal the truth?" → ALBATROSS_REVEAL
-- "Did he kill himself?" → SUICIDE
+BASE discoveries (general information):
+- VESSEL: "Was he on a boat/ship?" → VESSEL ("He was on a vessel")
+- FAMILY: "Did he have a family?" → FAMILY ("He had a family")
+- ISLAND: "Was there an island?" → ISLAND ("There was an island")
+- NO_FOOD: "Was there food on the island?" (answer NO) → NO_FOOD ("There was no food on the island")
+- RESTAURANT: "Did he go to a restaurant?" → RESTAURANT ("He went to a restaurant")
+- GUILT: "Did he feel guilty/bad?" → GUILT ("He felt overwhelming guilt")
 
-Do NOT award discoveries for vague or partial questions:
-- "Did the man have a family?" → Answer YES, but NO DISCOVERY (having a family is true, but doesn't confirm they DIED)
-- "Did something bad happen at sea?" → NO DISCOVERY (too vague)
-- "Did he eat something?" → NO DISCOVERY (doesn't specify what)
+EVOLVED discoveries (more specific details):
+- VESSEL_SANK: "Did the ship/boat sink?" or "Was there a shipwreck?" → VESSEL_SANK ("The vessel sank at sea")
+- FAMILY_DIED: "Did his family die?" → FAMILY_DIED ("His family died")
+- STRANDED: "Were they stranded on the island?" → STRANDED ("They were stranded on the island")
+- CANNIBALISM: "Did they eat human flesh?" or "Was there cannibalism?" → CANNIBALISM ("They resorted to cannibalism")
+- DECEPTION: "Was he lied to?" or "Was he deceived about what he ate?" → DECEPTION ("He was deceived about what he was eating")
+- RESCUED: "Were they rescued?" → RESCUED ("They were eventually rescued")
+- ALBATROSS_REVEAL: "Did the real albatross soup reveal the truth?" → ALBATROSS_REVEAL ("Tasting real albatross revealed the deception")
+- SUICIDE: "Did he kill himself?" → SUICIDE ("He took his own life")
 
-Be strict and precise with discovery awards. Answer truthfully based on the backstory, but only award discoveries when the specific element is directly confirmed.`;
+IMPORTANT RULES:
+1. Award the BASE version first if player only asks general questions
+2. Award the EVOLVED version if player asks specific details OR if they already have the base version
+3. Only award ONE discovery per question - the most specific one that matches what was asked
+4. Be strict - don't jump ahead to evolved discoveries unless directly asked
+
+Examples:
+- "Was the man on a boat?" → VESSEL (base)
+- Later: "Did the boat sink?" → VESSEL_SANK (evolved)
+- "Did he have a family?" → FAMILY (base)
+- Later: "Did his family die?" → FAMILY_DIED (evolved)
+- "Was there cannibalism?" → CANNIBALISM (evolved, directly asked about it)
+
+Be strict and precise. Only award what was specifically asked about.`;
 
 const OpenAIResponseSchema = z.object({
   answer: z.enum(["YES", "NO", "DOES_NOT_MATTER", "MULTIPLE_QUESTIONS"]),
   explanation: z.string(),
   discoveryKey: z.enum([
-    "SHIPWRECK",
-    "FAMILY_DIED", 
-    "STRANDED_ISLAND",
+    "VESSEL",
+    "VESSEL_SANK",
+    "FAMILY",
+    "FAMILY_DIED",
+    "ISLAND",
+    "STRANDED",
+    "NO_FOOD",
     "CANNIBALISM",
     "DECEPTION",
     "RESCUED",
+    "RESTAURANT",
     "ALBATROSS_REVEAL",
+    "GUILT",
     "SUICIDE"
   ]).nullable(),
   discoveryLabel: z.string().nullable(),
@@ -191,31 +206,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
       session.messages.push(playerMessage, systemMessage);
 
       let newDiscovery: Discovery | undefined;
-      if (discoveryKey && discoveryLabel && !session.discoveredKeys.has(discoveryKey)) {
-        newDiscovery = {
-          key: discoveryKey as DiscoveryKey,
-          label: discoveryLabel,
-          timestamp: Date.now(),
-        };
-
-        const discoveryMessage = {
-          id: session.messages.length,
-          type: "discovery" as const,
-          content: discoveryLabel,
-          timestamp: Date.now(),
-        };
-        session.messages.push(discoveryMessage);
-        session.discoveries.push(newDiscovery);
-        session.discoveredKeys.add(discoveryKey as DiscoveryKey);
+      if (discoveryKey && discoveryLabel) {
+        const key = discoveryKey as DiscoveryKey;
+        const topic = getDiscoveryTopic(key);
+        const stage = getDiscoveryStage(key);
+        
+        // Check if we already have a discovery for this topic
+        const existingDiscoveryIndex = session.discoveries.findIndex(
+          d => d.topic === topic
+        );
+        
+        if (existingDiscoveryIndex >= 0) {
+          // Topic already exists - check if this is an evolution
+          const existingDiscovery = session.discoveries[existingDiscoveryIndex];
+          if (stage === "evolved" && existingDiscovery.stage === "base") {
+            // Evolve the existing discovery
+            existingDiscovery.key = key;
+            existingDiscovery.label = discoveryLabel;
+            existingDiscovery.stage = stage;
+            existingDiscovery.evolutionTimestamp = Date.now();
+            newDiscovery = existingDiscovery;
+          }
+          // If same stage or trying to go backwards, ignore
+        } else {
+          // New topic - create discovery
+          newDiscovery = {
+            key,
+            topic,
+            label: discoveryLabel,
+            timestamp: Date.now(),
+            stage,
+          };
+          session.discoveries.push(newDiscovery);
+          session.discoveredTopics.add(topic);
+        }
+        
+        // Always track the key for auditing
+        session.discoveredKeys.add(key);
       }
 
-      // Check if enough discoveries have been made AND all critical keys are found
-      const discoveryCount = session.discoveredKeys.size;
-      const allCriticalKeysFound = CRITICAL_DISCOVERY_KEYS.every(
-        key => session.discoveredKeys.has(key)
+      // Check completion based on topics and critical topics
+      const topicCount = session.discoveredTopics.size;
+      const allCriticalTopicsFound = CRITICAL_TOPICS.every(
+        topic => session.discoveredTopics.has(topic)
       );
       
-      if (discoveryCount >= MIN_REQUIRED_DISCOVERIES && allCriticalKeysFound) {
+      if (topicCount >= MIN_REQUIRED_TOPICS && allCriticalTopicsFound) {
         session.isComplete = true;
       }
 
@@ -230,8 +266,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discoveries: session.discoveries,
         discoveredKeys: Array.from(session.discoveredKeys),
         progress: {
-          total: REQUIRED_DISCOVERY_KEYS.length,
-          discovered: session.discoveredKeys.size,
+          total: 8,
+          discovered: session.discoveredTopics.size,
         },
       };
 

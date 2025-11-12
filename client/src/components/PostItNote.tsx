@@ -1,33 +1,47 @@
 import { motion } from "framer-motion";
-import type { DiscoveryKey } from "@shared/schema";
-import shipwreckImg from "@assets/generated_images/Sinking_ship_sketch_5f52a96b.png";
+import type { DiscoveryKey, Discovery } from "@shared/schema";
+
+// Base state images
+import vesselImg from "@assets/generated_images/Floating_boat_sketch_deda538a.png";
+import vesselSankImg from "@assets/generated_images/Sinking_ship_sketch_5f52a96b.png";
 import familyImg from "@assets/generated_images/Stick_figure_family_sketch_2ef0c722.png";
-import islandImg from "@assets/generated_images/Desert_island_sketch_2c55ae9a.png";
+import islandImg from "@assets/generated_images/Island_sketch_2fdca28e.png";
 import hungerImg from "@assets/generated_images/Empty_plate_sketch_af202242.png";
 import deceptionImg from "@assets/generated_images/Deception_mask_sketch_814d4d41.png";
 import rescueImg from "@assets/generated_images/Rescue_helicopter_sketch_b383b97a.png";
+import restaurantImg from "@assets/generated_images/Restaurant_soup_sketch_33ca3de3.png";
 import albatrossImg from "@assets/generated_images/Albatross_bird_sketch_5d6e82e4.png";
 import sadnessImg from "@assets/generated_images/Sad_figure_sketch_6d5d99c5.png";
+import redXImg from "@assets/generated_images/Red_X_overlay_270e1ea8.png";
 
 const DISCOVERY_IMAGES: Record<DiscoveryKey, string> = {
-  SHIPWRECK: shipwreckImg,
+  VESSEL: vesselImg,
+  VESSEL_SANK: vesselSankImg,
+  FAMILY: familyImg,
   FAMILY_DIED: familyImg,
-  STRANDED_ISLAND: islandImg,
+  ISLAND: islandImg,
+  STRANDED: islandImg,
+  NO_FOOD: hungerImg,
   CANNIBALISM: hungerImg,
   DECEPTION: deceptionImg,
   RESCUED: rescueImg,
+  RESTAURANT: restaurantImg,
   ALBATROSS_REVEAL: albatrossImg,
+  GUILT: sadnessImg,
   SUICIDE: sadnessImg,
 };
 
 interface PostItNoteProps {
-  discoveryKey: DiscoveryKey;
-  label: string;
+  discovery: Discovery;
+  allDiscoveries: Discovery[];
   index: number;
 }
 
-export function PostItNote({ discoveryKey, label, index }: PostItNoteProps) {
+export function PostItNote({ discovery, allDiscoveries, index }: PostItNoteProps) {
   const rotation = (index * 3.7) % 7 - 3.5;
+  
+  const isEvolved = discovery.stage === "evolved";
+  const showRedX = discovery.key === "FAMILY_DIED";
   
   return (
     <motion.div
@@ -44,19 +58,36 @@ export function PostItNote({ discoveryKey, label, index }: PostItNoteProps) {
         delay: index * 0.2 
       }}
       className="relative w-32 h-32 sm:w-36 sm:h-36"
-      data-testid={`postit-${discoveryKey.toLowerCase()}`}
+      data-testid={`postit-${discovery.key.toLowerCase()}`}
     >
       <div className="absolute inset-0 bg-yellow-200 dark:bg-yellow-300 shadow-md rotate-0 hover-elevate transition-transform duration-200">
         <div className="absolute top-0 left-0 right-0 h-6 bg-yellow-300 dark:bg-yellow-400 opacity-50" />
         
-        <div className="p-3 flex flex-col items-center justify-center h-full">
+        <div className="p-3 flex flex-col items-center justify-center h-full relative">
           <img 
-            src={DISCOVERY_IMAGES[discoveryKey]} 
-            alt={label}
+            src={DISCOVERY_IMAGES[discovery.key]} 
+            alt={discovery.label}
             className="w-20 h-20 object-contain mb-1"
           />
-          <p className="text-[10px] text-center text-gray-800 dark:text-gray-900 font-medium line-clamp-2" style={{ fontFamily: 'cursive' }}>
-            {label}
+          
+          {showRedX && (
+            <motion.img
+              src={redXImg}
+              alt="Deceased"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 object-contain"
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ 
+                type: "spring",
+                stiffness: 300,
+                damping: 20,
+                delay: 0.3
+              }}
+            />
+          )}
+          
+          <p className="text-[10px] text-center text-gray-800 dark:text-gray-900 font-medium line-clamp-2 relative z-10" style={{ fontFamily: 'cursive' }}>
+            {discovery.label}
           </p>
         </div>
       </div>

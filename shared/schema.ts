@@ -17,46 +17,69 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-// Discovery key enum - canonical story elements required to solve the puzzle
+// Discovery keys - progressive system with base and evolved states
 export const DISCOVERY_KEYS = {
-  SHIPWRECK: "SHIPWRECK",
+  VESSEL: "VESSEL",
+  VESSEL_SANK: "VESSEL_SANK",
+  FAMILY: "FAMILY",
   FAMILY_DIED: "FAMILY_DIED",
-  STRANDED_ISLAND: "STRANDED_ISLAND",
+  ISLAND: "ISLAND",
+  STRANDED: "STRANDED",
+  NO_FOOD: "NO_FOOD",
   CANNIBALISM: "CANNIBALISM",
   DECEPTION: "DECEPTION",
   RESCUED: "RESCUED",
+  RESTAURANT: "RESTAURANT",
   ALBATROSS_REVEAL: "ALBATROSS_REVEAL",
+  GUILT: "GUILT",
   SUICIDE: "SUICIDE",
 } as const;
 
 export type DiscoveryKey = (typeof DISCOVERY_KEYS)[keyof typeof DISCOVERY_KEYS];
 
-// All discovery keys required to complete the game
-export const REQUIRED_DISCOVERY_KEYS: DiscoveryKey[] = [
-  DISCOVERY_KEYS.SHIPWRECK,
-  DISCOVERY_KEYS.FAMILY_DIED,
-  DISCOVERY_KEYS.STRANDED_ISLAND,
-  DISCOVERY_KEYS.CANNIBALISM,
-  DISCOVERY_KEYS.DECEPTION,
-  DISCOVERY_KEYS.RESCUED,
-  DISCOVERY_KEYS.ALBATROSS_REVEAL,
-  DISCOVERY_KEYS.SUICIDE,
-];
+// Topic mapping - each discovery key maps to a canonical topic
+export const DISCOVERY_TOPICS: Record<DiscoveryKey, string> = {
+  VESSEL: "VESSEL",
+  VESSEL_SANK: "VESSEL",
+  FAMILY: "FAMILY",
+  FAMILY_DIED: "FAMILY",
+  ISLAND: "ISLAND",
+  STRANDED: "ISLAND",
+  NO_FOOD: "FOOD",
+  CANNIBALISM: "FOOD",
+  DECEPTION: "DECEPTION",
+  RESCUED: "RESCUED",
+  RESTAURANT: "RESTAURANT",
+  ALBATROSS_REVEAL: "RESTAURANT",
+  GUILT: "OUTCOME",
+  SUICIDE: "OUTCOME",
+};
 
-// Minimum required discoveries to complete (allows missing 1-2 tertiary details)
-export const MIN_REQUIRED_DISCOVERIES = 7;
+// Stage determination - which keys are evolved states
+export const EVOLVED_KEYS: Set<DiscoveryKey> = new Set<DiscoveryKey>([
+  "VESSEL_SANK" as DiscoveryKey,
+  "FAMILY_DIED" as DiscoveryKey,
+  "STRANDED" as DiscoveryKey,
+  "CANNIBALISM" as DiscoveryKey,
+  "ALBATROSS_REVEAL" as DiscoveryKey,
+  "SUICIDE" as DiscoveryKey,
+]);
 
-// Critical discoveries that MUST be found to complete the game
-export const CRITICAL_DISCOVERY_KEYS: DiscoveryKey[] = [
-  DISCOVERY_KEYS.DECEPTION,         // Core to understanding the mystery
-  DISCOVERY_KEYS.ALBATROSS_REVEAL,  // The moment of realization at the restaurant
-  DISCOVERY_KEYS.CANNIBALISM,       // What he actually ate
-];
+// Critical topics that MUST be discovered to complete the game
+export const CRITICAL_TOPICS = ["DECEPTION", "RESTAURANT", "FOOD"];
+
+// Minimum required unique topics to complete (allows missing a few non-critical topics)
+export const MIN_REQUIRED_TOPICS = 6;
+
+export type DiscoveryStage = "base" | "evolved";
 
 export interface Discovery {
   key: DiscoveryKey;
+  topic: string;
   label: string;
   timestamp: number;
+  stage: DiscoveryStage;
+  evolutionTimestamp?: number;
 }
 
 // Game session types
@@ -72,6 +95,7 @@ export interface GameSession {
   id: string;
   messages: GameMessage[];
   discoveries: Discovery[];
+  discoveredTopics: Set<string>;
   discoveredKeys: Set<DiscoveryKey>;
   isComplete: boolean;
   createdAt: number;
@@ -97,4 +121,14 @@ export interface AskQuestionResponse {
     total: number;
     discovered: number;
   };
+}
+
+// Helper function to get topic for a discovery key
+export function getDiscoveryTopic(key: DiscoveryKey): string {
+  return DISCOVERY_TOPICS[key];
+}
+
+// Helper function to determine stage
+export function getDiscoveryStage(key: DiscoveryKey): DiscoveryStage {
+  return EVOLVED_KEYS.has(key) ? "evolved" : "base";
 }

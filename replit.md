@@ -6,14 +6,16 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**Detective Board with Post-It Note Sketches (Latest)**
-- Added animated post-it note sketches that appear as discoveries are unlocked
-- Generated 8 unique sketch images (sinking ship, stick figure family, desert island, etc.)
-- Created DetectiveBoard component positioned between puzzle prompt and chatbox
-- PostItNote component uses Framer Motion for spring animations with staggered delays
-- Each note has deterministic rotation based on index for stable positioning
-- Yellow post-it styling with subtle shadow layers for 3D effect
-- Notes organized in responsive flex grid layout
+**Detective Board with Progressive Post-It Notes (Latest)**
+- Implemented topic-based progressive discovery system where post-it notes evolve as players uncover more details
+- Post-it notes update in-place rather than duplicating when discoveries evolve (e.g., boat→sinking ship, family→family with red X)
+- Generated sketch images for both base and evolved states (floating boat, sinking ship, family, red X overlay, etc.)
+- Created DetectiveBoard component with animated post-it notes using Framer Motion
+- PostItNote component dynamically shows appropriate images and overlays based on discovery stage
+- Progress counter tracks unique topics (8 total), not individual discovery keys
+- Completion requires 6+ unique topics AND all 3 critical topics (DECEPTION, RESTAURANT, FOOD)
+- AI prompt guides progressive discovery awards based on specificity of player questions
+- Backend handles in-place discovery evolution with topic mapping and stage tracking
 
 **Structured Discovery System**
 - Replaced fuzzy keyword matching with canonical 8-key discovery tracking
