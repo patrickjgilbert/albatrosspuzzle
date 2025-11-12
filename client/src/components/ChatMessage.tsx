@@ -70,7 +70,7 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
               className="text-xs font-bold px-2 py-0.5"
               data-testid={`badge-response-${response.toLowerCase().replace(/\s+/g, '-')}`}
             >
-              {response.toLowerCase()}
+              {response.charAt(0) + response.slice(1).toLowerCase()}
             </Badge>
           ) : (
             <p className="text-base leading-relaxed" data-testid="text-message-content">

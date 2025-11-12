@@ -96,22 +96,10 @@ export default function Game() {
       setProgress(data.progress);
 
       if (data.discovery) {
-        setTimeout(() => {
-          const discoveryMessage: Message = {
-            id: messageIdCounter.current++,
-            type: "discovery",
-            content: data.discovery.label,
-          };
-          setMessages((prev) => [...prev, discoveryMessage]);
-          setDiscoveries(data.discoveries);
+        setDiscoveries(data.discoveries);
+      }
 
-          if (data.isComplete) {
-            setTimeout(() => {
-              setGameComplete(true);
-            }, 1000);
-          }
-        }, 500);
-      } else if (data.isComplete) {
+      if (data.isComplete) {
         setTimeout(() => {
           setGameComplete(true);
         }, 1000);
