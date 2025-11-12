@@ -205,8 +205,15 @@ export default function Game() {
           <DetectiveBoard discoveries={discoveries} />
         </div>
 
-        <div className="flex-1 overflow-y-auto">
-          <div className="max-w-3xl mx-auto w-full px-4 md:px-6 space-y-4 pb-4">
+        <div className="flex-1 px-4 md:px-6 py-4 overflow-hidden">
+          <div 
+            className="max-w-3xl mx-auto h-full border-2 border-border rounded-lg overflow-y-auto p-4 space-y-4 bg-background/50"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: 'hsl(var(--primary)) transparent'
+            }}
+            data-testid="chat-container"
+          >
             {messages.length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground text-sm">

@@ -10,11 +10,14 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 - Fixed chat layout to keep puzzle prompt and detective board always visible while only chat messages scroll
 - Optimized space allocation: larger input box (h-14), smaller post-it notes (96-112px), compact puzzle prompt
 - Improved conversation visibility: 5+ messages visible in chat area without scrolling
+- Added visible scrollbar to chat area (custom styled with primary color, 12px width)
+- Added border frame (border-2) around chat box to clearly show conversation boundaries
 - Enhanced AI prompt with keyword-based intent matching to ensure discoveries are awarded reliably
 - Implemented server-side regex safety net to catch missed discoveries when AI doesn't award them
-- Generated new distinct images: cannibalism cooking pot, stranded survivor, suicide weapon sketch
+- Generated new distinct images: cannibalism scene (people around fire with bones), stranded survivor, suicide weapon sketch
 - Unified response token format to use underscores throughout system (DOES_NOT_MATTER, ONE_QUESTION_AT_A_TIME_PLEASE)
 - Added user-friendly display formatting in ChatMessage component (converts underscores to spaces for display)
+- Fixed AI response validation to accept missing discovery fields (.nullish() instead of .nullable())
 - All end-to-end tests passing: layout scrolls correctly, story-relevant questions award discoveries, response badges format properly
 
 **Detective Board with Progressive Post-It Notes**

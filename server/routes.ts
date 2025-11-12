@@ -113,8 +113,8 @@ const OpenAIResponseSchema = z.object({
     "ALBATROSS_REVEAL",
     "GUILT",
     "SUICIDE"
-  ]).nullable(),
-  discoveryLabel: z.string().nullable(),
+  ]).nullish(),
+  discoveryLabel: z.string().nullish(),
 });
 
 function normalizeAnswer(answer: string): "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE" {
