@@ -7,6 +7,7 @@ import TypingIndicator from "@/components/TypingIndicator";
 import ChatInput from "@/components/ChatInput";
 import GameCompletionModal from "@/components/GameCompletionModal";
 import ThemeToggle from "@/components/ThemeToggle";
+import { DetectiveBoard } from "@/components/DetectiveBoard";
 import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
@@ -201,6 +202,8 @@ export default function Game() {
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
           <PuzzleStatement statement={PUZZLE_STATEMENT} />
+
+          <DetectiveBoard discoveries={discoveries} />
 
           {messages.length === 0 && (
             <div className="text-center py-12">
