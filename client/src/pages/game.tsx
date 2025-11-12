@@ -200,7 +200,7 @@ export default function Game() {
       </header>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="max-w-3xl mx-auto w-full px-4 md:px-6 pt-6 pb-4 space-y-4 flex-shrink-0">
+        <div className="max-w-3xl mx-auto w-full px-4 md:px-6 pt-4 pb-2 space-y-2 flex-shrink-0">
           <PuzzleStatement statement={PUZZLE_STATEMENT} />
           <DetectiveBoard discoveries={discoveries} />
         </div>

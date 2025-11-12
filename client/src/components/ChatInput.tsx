@@ -25,7 +25,7 @@ export default function ChatInput({ onSubmit, disabled }: ChatInputProps) {
       className="border-t border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60"
       data-testid="form-chat-input"
     >
-      <div className="max-w-3xl mx-auto px-4 py-4">
+      <div className="max-w-3xl mx-auto px-4 py-6">
         <div className="flex items-center gap-2">
           <Input
             type="text"
@@ -33,14 +33,14 @@ export default function ChatInput({ onSubmit, disabled }: ChatInputProps) {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             disabled={disabled}
-            className="flex-1 h-12 px-6 rounded-full text-base"
+            className="flex-1 h-14 px-6 rounded-full text-base"
             data-testid="input-question"
           />
           <Button
             type="submit"
             size="icon"
             disabled={!question.trim() || disabled}
-            className="w-12 h-12 rounded-full flex-shrink-0"
+            className="w-14 h-14 rounded-full flex-shrink-0"
             data-testid="button-send"
           >
             <Send className="w-5 h-5" />

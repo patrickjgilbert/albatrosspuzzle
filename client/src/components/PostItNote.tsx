@@ -60,24 +60,24 @@ export function PostItNote({ discovery, allDiscoveries, index }: PostItNoteProps
         damping: 15,
         delay: index * 0.2 
       }}
-      className="relative w-32 h-32 sm:w-36 sm:h-36"
+      className="relative w-24 h-24 sm:w-28 sm:h-28"
       data-testid={`postit-${discovery.key.toLowerCase()}`}
     >
       <div className="absolute inset-0 bg-yellow-200 dark:bg-yellow-300 shadow-md rotate-0 hover-elevate transition-transform duration-200">
-        <div className="absolute top-0 left-0 right-0 h-6 bg-yellow-300 dark:bg-yellow-400 opacity-50" />
+        <div className="absolute top-0 left-0 right-0 h-4 bg-yellow-300 dark:bg-yellow-400 opacity-50" />
         
-        <div className="p-3 flex flex-col items-center justify-center h-full relative">
+        <div className="p-2 flex flex-col items-center justify-center h-full relative">
           <img 
             src={DISCOVERY_IMAGES[discovery.key]} 
             alt={discovery.label}
-            className="w-20 h-20 object-contain mb-1"
+            className="w-14 h-14 object-contain mb-1"
           />
           
           {showRedX && (
             <motion.img
               src={redXImg}
               alt="Deceased"
-              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 object-contain"
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 object-contain"
               initial={{ scale: 0, rotate: -45 }}
               animate={{ scale: 1, rotate: 0 }}
               transition={{ 
@@ -89,7 +89,7 @@ export function PostItNote({ discovery, allDiscoveries, index }: PostItNoteProps
             />
           )}
           
-          <p className="text-[10px] text-center text-gray-800 dark:text-gray-900 font-medium line-clamp-2 relative z-10" style={{ fontFamily: 'cursive' }}>
+          <p className="text-[9px] text-center text-gray-800 dark:text-gray-900 font-medium line-clamp-2 relative z-10" style={{ fontFamily: 'cursive' }}>
             {discovery.label}
           </p>
         </div>

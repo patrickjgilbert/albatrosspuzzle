@@ -8,6 +8,8 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 **UX and Discovery Improvements (Latest - November 12, 2025)**
 - Fixed chat layout to keep puzzle prompt and detective board always visible while only chat messages scroll
+- Optimized space allocation: larger input box (h-14), smaller post-it notes (96-112px), compact puzzle prompt
+- Improved conversation visibility: 5+ messages visible in chat area without scrolling
 - Enhanced AI prompt with keyword-based intent matching to ensure discoveries are awarded reliably
 - Implemented server-side regex safety net to catch missed discoveries when AI doesn't award them
 - Generated new distinct images: cannibalism cooking pot, stranded survivor, suicide weapon sketch

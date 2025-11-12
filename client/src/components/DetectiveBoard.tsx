@@ -12,14 +12,14 @@ export function DetectiveBoard({ discoveries }: DetectiveBoardProps) {
 
   return (
     <div 
-      className="w-full py-6 px-4"
+      className="w-full py-3 px-4"
       data-testid="detective-board"
     >
       <div className="max-w-4xl mx-auto">
-        <h3 className="text-sm font-semibold text-muted-foreground mb-4 text-center">
+        <h3 className="text-xs font-semibold text-muted-foreground mb-3 text-center">
           Evidence Board
         </h3>
-        <div className="flex flex-wrap gap-4 justify-center items-start">
+        <div className="flex flex-wrap gap-3 justify-center items-start">
           {discoveries.map((discovery, index) => (
             <PostItNote
               key={discovery.key}

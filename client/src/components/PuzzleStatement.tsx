@@ -7,17 +7,17 @@ interface PuzzleStatementProps {
 
 export default function PuzzleStatement({ statement }: PuzzleStatementProps) {
   return (
-    <Card className="p-6 border-l-4 border-l-primary bg-card">
-      <div className="flex items-start gap-3">
-        <HelpCircle className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+    <Card className="p-3 border-l-4 border-l-primary bg-card">
+      <div className="flex items-start gap-2">
+        <HelpCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
         <div className="flex-1">
-          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
             The Puzzle
           </h2>
-          <p className="font-mono text-base md:text-lg leading-relaxed text-foreground">
+          <p className="font-mono text-sm leading-snug text-foreground">
             {statement}
           </p>
-          <p className="text-sm text-muted-foreground mt-4">
+          <p className="text-xs text-muted-foreground mt-2">
             Ask yes-or-no questions to uncover the mystery behind this story.
           </p>
         </div>
