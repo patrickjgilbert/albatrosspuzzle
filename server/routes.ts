@@ -38,8 +38,10 @@ Rules for answering:
 
 Important clarifications:
 - "Was there food on the island?" → NO (there was no food, which is why they resorted to cannibalism)
+- "Is albatross a bird?" → YES (this is factually true and relevant to understanding the puzzle)
+- Questions about what an albatross is are relevant and should be answered truthfully
 - Questions about survival circumstances (food, water, shelter) are relevant and should be answered YES or NO based on the backstory
-- Only answer "DOES_NOT_MATTER" for details that have absolutely no bearing on the puzzle's solution
+- Only answer "DOES_NOT_MATTER" for details that have absolutely no bearing on the puzzle's solution (e.g., man's appearance, weather, restaurant location)
 
 Respond ONLY with valid JSON in this exact format:
 {
