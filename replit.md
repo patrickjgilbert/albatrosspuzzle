@@ -6,7 +6,16 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**Structured Discovery System (Latest)**
+**Detective Board with Post-It Note Sketches (Latest)**
+- Added animated post-it note sketches that appear as discoveries are unlocked
+- Generated 8 unique sketch images (sinking ship, stick figure family, desert island, etc.)
+- Created DetectiveBoard component positioned between puzzle prompt and chatbox
+- PostItNote component uses Framer Motion for spring animations with staggered delays
+- Each note has deterministic rotation based on index for stable positioning
+- Yellow post-it styling with subtle shadow layers for 3D effect
+- Notes organized in responsive flex grid layout
+
+**Structured Discovery System**
 - Replaced fuzzy keyword matching with canonical 8-key discovery tracking
 - Defined 8 story elements: SHIPWRECK, FAMILY_DIED, STRANDED_ISLAND, CANNIBALISM, DECEPTION, RESCUED, ALBATROSS_REVEAL, SUICIDE
 - Completion requires 7 of 8 discoveries PLUS 3 critical keys (DECEPTION, ALBATROSS_REVEAL, CANNIBALISM)
