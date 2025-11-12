@@ -28,67 +28,75 @@ const SYSTEM_PROMPT = `You are a game master for the classic "Albatross Soup" la
 Here is the complete backstory:
 ${PUZZLE_BACKSTORY}
 
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. VESSEL: boat, ship, vessel, cruise, sailing
+2. VESSEL_SANK: sink, sank, sinking, shipwreck, wreck, crash
+3. FAMILY: family, wife, children, kids, spouse
+4. FAMILY_DIED: family die, family dead, family killed, family perish
+5. ISLAND: island, land, shore, beach
+6. STRANDED: stranded, stuck, trapped, marooned, abandoned
+7. NO_FOOD: food on island, food available, anything to eat
+8. CANNIBALISM: cannibalism, eating people, eating humans, eating flesh, eating bodies, ate people, ate humans
+9. DECEPTION: lied to, deceived, tricked, fooled, misled, didn't know
+10. RESCUED: rescued, saved, found, picked up, escape, got off, made it back
+11. RESTAURANT: restaurant, diner, eatery, cafe
+12. ALBATROSS_REVEAL: real albatross, actual albatross, true taste, discovered truth
+13. GUILT: guilt, guilty, ashamed, remorse, couldn't live with
+14. SUICIDE: kill himself, suicide, shot himself, take his life, end his life
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
 Rules for answering:
-1. If the player asks multiple questions at once (using "and", "or", or multiple question marks), answer with "MULTIPLE_QUESTIONS"
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
 2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
 3. Answer "YES" if the question's implication is true according to the backstory
 4. Answer "NO" if the question's implication is false according to the backstory
-5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle (e.g., the man's race, age, appearance, the restaurant's location, the weather, etc.)
-6. Be truthful but don't volunteer extra information beyond what is asked
-7. If the question reveals a key plot point, return the discovery key and label
-
-Important clarifications:
-- "Was there food on the island?" → NO (there was no food, which is why they resorted to cannibalism)
-- "Is albatross a bird?" → YES (this is factually true and relevant to understanding the puzzle)
-- Questions about what an albatross is are relevant and should be answered truthfully
-- Questions about survival circumstances (food, water, shelter) are relevant and should be answered YES or NO based on the backstory
-- Only answer "DOES_NOT_MATTER" for details that have absolutely no bearing on the puzzle's solution (e.g., man's appearance, weather, restaurant location)
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
 
 Respond ONLY with valid JSON in this exact format:
 {
-  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "MULTIPLE_QUESTIONS",
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
   "explanation": "Brief explanation (1-2 sentences max)",
-  "discoveryKey": null | one of the discovery keys listed below,
-  "discoveryLabel": null | "Natural language description of the discovery"
+  "discoveryKey": null | discovery key from list below,
+  "discoveryLabel": null | "Natural language description"
 }
 
-Progressive Discovery System - Award based on what the player SPECIFICALLY asked about:
+Progressive Discovery System:
 
-BASE discoveries (general information):
-- VESSEL: "Was he on a boat/ship?" → VESSEL ("He was on a vessel")
-- FAMILY: "Did he have a family?" → FAMILY ("He had a family")
-- ISLAND: "Was there an island?" → ISLAND ("There was an island")
-- NO_FOOD: "Was there food on the island?" (answer NO) → NO_FOOD ("There was no food on the island")
-- RESTAURANT: "Did he go to a restaurant?" → RESTAURANT ("He went to a restaurant")
-- GUILT: "Did he feel guilty/bad?" → GUILT ("He felt overwhelming guilt")
+BASE discoveries (award for general questions):
+- VESSEL: "Was he on a boat?" "Was there a ship?"
+- FAMILY: "Did he have family?" "Was his family there?"
+- ISLAND: "Was there an island?" "Did they reach land?"
+- NO_FOOD: "Was there food?" "Was there anything to eat?"
+- RESTAURANT: "Did he go to a restaurant?" "Was there a restaurant?"
+- GUILT: "Did he feel guilty?" "Did he feel bad?"
 
-EVOLVED discoveries (more specific details):
-- VESSEL_SANK: "Did the ship/boat sink?" or "Was there a shipwreck?" → VESSEL_SANK ("The vessel sank at sea")
-- FAMILY_DIED: "Did his family die?" → FAMILY_DIED ("His family died")
-- STRANDED: "Were they stranded on the island?" → STRANDED ("They were stranded on the island")
-- CANNIBALISM: "Did they eat human flesh?" or "Was there cannibalism?" → CANNIBALISM ("They resorted to cannibalism")
-- DECEPTION: "Was he lied to?" or "Was he deceived about what he ate?" → DECEPTION ("He was deceived about what he was eating")
-- RESCUED: "Were they rescued?" → RESCUED ("They were eventually rescued")
-- ALBATROSS_REVEAL: "Did the real albatross soup reveal the truth?" → ALBATROSS_REVEAL ("Tasting real albatross revealed the deception")
-- SUICIDE: "Did he kill himself?" → SUICIDE ("He took his own life")
+EVOLVED discoveries (award for specific questions):
+- VESSEL_SANK: "Did it sink?" "Was there a shipwreck?"
+- FAMILY_DIED: "Did they die?" "Did his family perish?"
+- STRANDED: "Were they stranded?" "Were they stuck?"
+- CANNIBALISM: "Was there cannibalism?" "Did they eat people?" "Did survivors eat humans?"
+- DECEPTION: "Was he deceived?" "Was he lied to?"
+- RESCUED: "Were they rescued?" "Were they saved?" "Did they get off the island?" "Was he eventually rescued?"
+- ALBATROSS_REVEAL: "Did real albatross reveal truth?" "Did the soup taste different?"
+- SUICIDE: "Did he kill himself?" "Did he commit suicide?"
 
-IMPORTANT RULES:
-1. Award the BASE version first if player only asks general questions
-2. Award the EVOLVED version if player asks specific details OR if they already have the base version
-3. Only award ONE discovery per question - the most specific one that matches what was asked
-4. Be strict - don't jump ahead to evolved discoveries unless directly asked
+Examples with complete responses:
+Q: "Was the man on a boat?"
+A: {"answer": "YES", "explanation": "He was on a ship.", "discoveryKey": "VESSEL", "discoveryLabel": "He was on a vessel"}
 
-Examples:
-- "Was the man on a boat?" → VESSEL (base)
-- Later: "Did the boat sink?" → VESSEL_SANK (evolved)
-- "Did he have a family?" → FAMILY (base)
-- Later: "Did his family die?" → FAMILY_DIED (evolved)
-- "Was there cannibalism?" → CANNIBALISM (evolved, directly asked about it)
+Q: "Were they rescued from the island?"
+A: {"answer": "YES", "explanation": "Yes, they were eventually rescued.", "discoveryKey": "RESCUED", "discoveryLabel": "They were eventually rescued"}
 
-Be strict and precise. Only award what was specifically asked about.`;
+Q: "Did the survivors resort to cannibalism?"
+A: {"answer": "YES", "explanation": "Yes, the survivors ate human flesh to survive.", "discoveryKey": "CANNIBALISM", "discoveryLabel": "They resorted to cannibalism"}
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
 
 const OpenAIResponseSchema = z.object({
-  answer: z.enum(["YES", "NO", "DOES_NOT_MATTER", "MULTIPLE_QUESTIONS"]),
+  answer: z.enum(["YES", "NO", "DOES_NOT_MATTER", "ONE_QUESTION_AT_A_TIME_PLEASE"]),
   explanation: z.string(),
   discoveryKey: z.enum([
     "VESSEL",
@@ -109,16 +117,16 @@ const OpenAIResponseSchema = z.object({
   discoveryLabel: z.string().nullable(),
 });
 
-function normalizeAnswer(answer: string): "YES" | "NO" | "DOES NOT MATTER" | "ONE QUESTION AT A TIME, PLEASE" {
+function normalizeAnswer(answer: string): "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE" {
   const normalized = answer.toUpperCase().trim().replace(/[_\s-]+/g, "_");
   
   if (normalized === "YES") return "YES";
   if (normalized === "NO") return "NO";
   if (normalized === "DOES_NOT_MATTER" || normalized === "DOESN'T_MATTER" || normalized === "DOESNT_MATTER") {
-    return "DOES NOT MATTER";
+    return "DOES_NOT_MATTER";
   }
-  if (normalized === "MULTIPLE_QUESTIONS") {
-    return "ONE QUESTION AT A TIME, PLEASE";
+  if (normalized === "ONE_QUESTION_AT_A_TIME_PLEASE" || normalized === "MULTIPLE_QUESTIONS") {
+    return "ONE_QUESTION_AT_A_TIME_PLEASE";
   }
   
   throw new Error(`Invalid answer format: ${answer}`);
@@ -185,8 +193,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const answer = normalizeAnswer(validated.data.answer);
       const explanation = validated.data.explanation;
-      const discoveryKey = validated.data.discoveryKey;
-      const discoveryLabel = validated.data.discoveryLabel;
+      let discoveryKey = validated.data.discoveryKey;
+      let discoveryLabel = validated.data.discoveryLabel;
+
+      // Server-side safety net: If AI answered YES but missed a discovery, catch it
+      if (answer === "YES" && !discoveryKey) {
+        const questionLower = question.toLowerCase();
+        
+        // Check for rescue keywords
+        if (/rescu(ed|e)|saved|found|picked up|escape|got off|made it back/i.test(questionLower)) {
+          discoveryKey = "RESCUED";
+          discoveryLabel = "They were eventually rescued";
+        }
+        // Check for cannibalism keywords
+        else if (/cannibal(ism|istic)?|eating people|eating humans|eating flesh|eating bodies|ate people|ate humans|resort to eating|eat.*human/i.test(questionLower)) {
+          discoveryKey = "CANNIBALISM";
+          discoveryLabel = "They resorted to cannibalism";
+        }
+        // Check for deception keywords
+        else if (/lied to|deceived|tricked|fooled|misled|didn'?t know what/i.test(questionLower)) {
+          discoveryKey = "DECEPTION";
+          discoveryLabel = "He was deceived about what he was eating";
+        }
+        // Check for suicide keywords
+        else if (/kill himself|suicide|shot himself|take.*life|end.*life/i.test(questionLower)) {
+          discoveryKey = "SUICIDE";
+          discoveryLabel = "He took his own life";
+        }
+        // Check for shipwreck keywords
+        else if (/sink|sank|sinking|shipwreck|wreck|crash/i.test(questionLower)) {
+          discoveryKey = "VESSEL_SANK";
+          discoveryLabel = "The vessel sank at sea";
+        }
+        // Check for stranded keywords
+        else if (/stranded|stuck|trapped|marooned|abandoned/i.test(questionLower)) {
+          discoveryKey = "STRANDED";
+          discoveryLabel = "They were stranded on the island";
+        }
+        // Check for family death keywords
+        else if (/family.*die|family.*dead|family.*killed|family.*perish/i.test(questionLower)) {
+          discoveryKey = "FAMILY_DIED";
+          discoveryLabel = "His family died";
+        }
+      }
 
       const playerMessage = {
         id: session.messages.length,

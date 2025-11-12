@@ -3,7 +3,7 @@ import { Lightbulb } from "lucide-react";
 import { motion } from "framer-motion";
 
 export type MessageType = "player" | "system" | "discovery";
-export type ResponseType = "YES" | "NO" | "DOES NOT MATTER" | "HINT" | "ONE QUESTION AT A TIME, PLEASE";
+export type ResponseType = "YES" | "NO" | "DOES_NOT_MATTER" | "HINT" | "ONE_QUESTION_AT_A_TIME_PLEASE";
 
 interface ChatMessageProps {
   type: MessageType;
@@ -22,15 +22,22 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
         return "default";
       case "NO":
         return "secondary";
-      case "DOES NOT MATTER":
+      case "DOES_NOT_MATTER":
         return "outline";
       case "HINT":
         return "outline";
-      case "ONE QUESTION AT A TIME, PLEASE":
+      case "ONE_QUESTION_AT_A_TIME_PLEASE":
         return "outline";
       default:
         return "secondary";
     }
+  };
+
+  const formatResponseForDisplay = (resp: ResponseType): string => {
+    return resp
+      .split('_')
+      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+      .join(' ');
   };
 
   if (isDiscoveryMessage) {
@@ -70,9 +77,9 @@ export default function ChatMessage({ type, content, response, isDiscovery }: Ch
             <Badge
               variant={getResponseBadgeVariant(response)}
               className="text-xs font-bold px-2 py-0.5"
-              data-testid={`badge-response-${response.toLowerCase().replace(/\s+/g, '-')}`}
+              data-testid={`badge-response-${response.toLowerCase().replace(/_/g, '-')}`}
             >
-              {response.split(' ').map(word => word.charAt(0) + word.slice(1).toLowerCase()).join(' ')}
+              {formatResponseForDisplay(response)}
             </Badge>
           ) : (
             <p className="text-base leading-relaxed" data-testid="text-message-content">

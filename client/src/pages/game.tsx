@@ -199,32 +199,35 @@ export default function Game() {
         </div>
       </header>
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-6 space-y-4">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <div className="max-w-3xl mx-auto w-full px-4 md:px-6 pt-6 pb-4 space-y-4 flex-shrink-0">
           <PuzzleStatement statement={PUZZLE_STATEMENT} />
-
           <DetectiveBoard discoveries={discoveries} />
+        </div>
 
-          {messages.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground text-sm">
-                Start asking yes-or-no questions to uncover the mystery...
-              </p>
-            </div>
-          )}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto w-full px-4 md:px-6 space-y-4 pb-4">
+            {messages.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-sm">
+                  Start asking yes-or-no questions to uncover the mystery...
+                </p>
+              </div>
+            )}
 
-          {messages.map((message) => (
-            <ChatMessage
-              key={message.id}
-              type={message.type}
-              content={message.content}
-              response={message.response}
-            />
-          ))}
+            {messages.map((message) => (
+              <ChatMessage
+                key={message.id}
+                type={message.type}
+                content={message.content}
+                response={message.response}
+              />
+            ))}
 
-          {isTyping && <TypingIndicator />}
+            {isTyping && <TypingIndicator />}
 
-          <div ref={messagesEndRef} />
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </main>
 

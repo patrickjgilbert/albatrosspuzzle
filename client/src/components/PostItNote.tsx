@@ -7,11 +7,14 @@ import vesselSankImg from "@assets/generated_images/Sinking_ship_sketch_5f52a96b
 import familyImg from "@assets/generated_images/Stick_figure_family_sketch_2ef0c722.png";
 import islandImg from "@assets/generated_images/Island_sketch_2fdca28e.png";
 import hungerImg from "@assets/generated_images/Empty_plate_sketch_af202242.png";
+import cannibalismImg from "@assets/generated_images/Cannibalism_cooking_pot_sketch_7d2ff4e5.png";
+import strandedImg from "@assets/generated_images/Stranded_survivor_sketch_81329318.png";
 import deceptionImg from "@assets/generated_images/Deception_mask_sketch_814d4d41.png";
 import rescueImg from "@assets/generated_images/Rescue_helicopter_sketch_b383b97a.png";
 import restaurantImg from "@assets/generated_images/Restaurant_soup_sketch_33ca3de3.png";
 import albatrossImg from "@assets/generated_images/Albatross_bird_sketch_5d6e82e4.png";
 import sadnessImg from "@assets/generated_images/Sad_figure_sketch_6d5d99c5.png";
+import suicideImg from "@assets/generated_images/Suicide_weapon_sketch_f06aba84.png";
 import redXImg from "@assets/generated_images/Red_X_overlay_270e1ea8.png";
 
 const DISCOVERY_IMAGES: Record<DiscoveryKey, string> = {
@@ -20,15 +23,15 @@ const DISCOVERY_IMAGES: Record<DiscoveryKey, string> = {
   FAMILY: familyImg,
   FAMILY_DIED: familyImg,
   ISLAND: islandImg,
-  STRANDED: islandImg,
+  STRANDED: strandedImg,
   NO_FOOD: hungerImg,
-  CANNIBALISM: hungerImg,
+  CANNIBALISM: cannibalismImg,
   DECEPTION: deceptionImg,
   RESCUED: rescueImg,
   RESTAURANT: restaurantImg,
   ALBATROSS_REVEAL: albatrossImg,
   GUILT: sadnessImg,
-  SUICIDE: sadnessImg,
+  SUICIDE: suicideImg,
 };
 
 interface PostItNoteProps {
