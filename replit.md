@@ -6,7 +6,16 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**Detective Board with Progressive Post-It Notes (Latest)**
+**UX and Discovery Improvements (Latest - November 12, 2025)**
+- Fixed chat layout to keep puzzle prompt and detective board always visible while only chat messages scroll
+- Enhanced AI prompt with keyword-based intent matching to ensure discoveries are awarded reliably
+- Implemented server-side regex safety net to catch missed discoveries when AI doesn't award them
+- Generated new distinct images: cannibalism cooking pot, stranded survivor, suicide weapon sketch
+- Unified response token format to use underscores throughout system (DOES_NOT_MATTER, ONE_QUESTION_AT_A_TIME_PLEASE)
+- Added user-friendly display formatting in ChatMessage component (converts underscores to spaces for display)
+- All end-to-end tests passing: layout scrolls correctly, story-relevant questions award discoveries, response badges format properly
+
+**Detective Board with Progressive Post-It Notes**
 - Implemented topic-based progressive discovery system where post-it notes evolve as players uncover more details
 - Post-it notes update in-place rather than duplicating when discoveries evolve (e.g., boat→sinking ship, family→family with red X)
 - Generated sketch images for both base and evolved states (floating boat, sinking ship, family, red X overlay, etc.)
