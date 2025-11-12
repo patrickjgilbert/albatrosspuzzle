@@ -27,12 +27,14 @@ interface PostItNoteProps {
 }
 
 export function PostItNote({ discoveryKey, label, index }: PostItNoteProps) {
+  const rotation = (index * 3.7) % 7 - 3.5;
+  
   return (
     <motion.div
       initial={{ scale: 0, rotate: -10, opacity: 0 }}
       animate={{ 
         scale: 1, 
-        rotate: Math.random() * 6 - 3,
+        rotate: rotation,
         opacity: 1 
       }}
       transition={{ 
