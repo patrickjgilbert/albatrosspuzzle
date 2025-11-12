@@ -25,14 +25,6 @@ interface Message {
 const PUZZLE_STATEMENT =
   "A man walks into a restaurant, orders the albatross soup, takes one bite of it, puts his spoon down, walks out of the restaurant, and shoots himself.";
 
-const SAMPLE_QUESTIONS = [
-  "Did the man have a family?",
-  "Was there a shipwreck?",
-  "Did he eat something on an island?",
-  "Was he told the meat was albatross?",
-  "Did his family die?",
-];
-
 export default function Game() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -181,17 +173,16 @@ export default function Game() {
             </PopoverTrigger>
             <PopoverContent className="w-80" data-testid="popover-help">
               <div className="space-y-3">
-                <h3 className="font-semibold">Need a hint?</h3>
+                <h3 className="font-semibold">About This Puzzle</h3>
                 <p className="text-sm text-muted-foreground">
-                  Try asking questions like:
+                  This is a lateral thinking puzzle designed to test your creative problem-solving skills. The story you see is just the surface - there's a hidden backstory that explains this mysterious and shocking event.
                 </p>
-                <ul className="space-y-1 text-sm">
-                  {SAMPLE_QUESTIONS.map((q, i) => (
-                    <li key={i} className="text-muted-foreground">
-                      • {q}
-                    </li>
-                  ))}
-                </ul>
+                <p className="text-sm text-muted-foreground">
+                  Your goal is to uncover the complete backstory by asking yes-or-no questions. Think creatively, explore different angles, and piece together the truth behind what happened.
+                </p>
+                <p className="text-sm text-muted-foreground font-medium">
+                  Start asking questions to reveal the mystery!
+                </p>
               </div>
             </PopoverContent>
           </Popover>
