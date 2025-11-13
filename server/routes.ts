@@ -1,16 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 import { 
   askQuestionSchema, 
   type AskQuestionResponse, 
   type DiscoveryKey,
   type Discovery,
+  type GameMessage,
   DISCOVERY_KEYS,
   MIN_REQUIRED_TOPICS,
   CRITICAL_TOPICS,
   getDiscoveryTopic,
-  getDiscoveryStage
+  getDiscoveryStage,
+  type Puzzle,
 } from "@shared/schema";
 import OpenAI from "openai";
 import { z } from "zod";
@@ -19,11 +22,29 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const PUZZLE_BACKSTORY = `
+// ============================================================================
+// PUZZLE SEEDING - Albatross Puzzle Data
+// ============================================================================
+
+const ALBATROSS_SLUG = "albatross";
+
+const ALBATROSS_PUZZLE_DATA = {
+  slug: ALBATROSS_SLUG,
+  title: "The Albatross Puzzle",
+  description: "A man walks into a restaurant, orders the albatross soup, takes one bite, puts his spoon down, walks out, and shoots himself. Why?",
+  prompt: "A man walks into a restaurant, orders the albatross soup, takes one bite of it, puts his spoon down, walks out of the restaurant, and shoots himself.",
+  isFree: true,
+  isActive: true,
+  difficulty: "hard",
+  aiPrompt: buildAlbatrossSystemPrompt(),
+};
+
+function buildAlbatrossSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
 The man was on a ship or cruise ship with his wife and children. There was a shipwreck where they were stranded on a desert island. The man survived, but his family did not. With no options for food, the remaining survivors suggested cannibalism, but the man refused to participate, especially when it came to potentially eating the remains of his own family. But the man had skills and talents that made him useful to the rest of the survivors on the island, so they wanted to keep him alive. To convince him to eat the human remains, the other survivors lied to the man and said that the meat was albatross. And this was his primary source of food for many months that he had lived on this island before they were eventually rescued. Later, back in civilization, the man discovered a restaurant that served albatross. After trying the soup, he quickly realized that he had never tasted this before and then realized that he had been unknowingly participating in cannibalism while stranded on the island. He couldn't live with the guilt, so he immediately decided to take his own life.
 `;
 
-const SYSTEM_PROMPT = `You are a game master for the classic "Albatross Soup" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+  return `You are a game master for the classic "Albatross Soup" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
 
 Here is the complete backstory:
 ${PUZZLE_BACKSTORY}
@@ -94,6 +115,11 @@ Q: "Did the survivors resort to cannibalism?"
 A: {"answer": "YES", "explanation": "Yes, the survivors ate human flesh to survive.", "discoveryKey": "CANNIBALISM", "discoveryLabel": "They resorted to cannibalism"}
 
 REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
+// ============================================================================
+// OPENAI RESPONSE VALIDATION
+// ============================================================================
 
 const OpenAIResponseSchema = z.object({
   answer: z.enum(["YES", "NO", "DOES_NOT_MATTER", "ONE_QUESTION_AT_A_TIME_PLEASE"]),
@@ -125,37 +151,181 @@ function normalizeAnswer(answer: string): "YES" | "NO" | "DOES_NOT_MATTER" | "ON
   if (normalized === "DOES_NOT_MATTER" || normalized === "DOESN'T_MATTER" || normalized === "DOESNT_MATTER") {
     return "DOES_NOT_MATTER";
   }
-  if (normalized === "ONE_QUESTION_AT_A_TIME_PLEASE" || normalized === "MULTIPLE_QUESTIONS") {
+  if (normalized === "ONE_QUESTION_AT_A_TIME_PLEASE" || normalized === "ONE_QUESTION_AT_A_TIME") {
     return "ONE_QUESTION_AT_A_TIME_PLEASE";
   }
   
-  throw new Error(`Invalid answer format: ${answer}`);
+  return "DOES_NOT_MATTER";
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  app.post("/api/ask", async (req, res) => {
-    try {
-      const validatedData = askQuestionSchema.parse(req.body);
-      const { sessionId, question } = validatedData;
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
-      let session = sessionId ? await storage.getGameSession(sessionId) : null;
+async function ensureAlbatrossPuzzle(): Promise<Puzzle> {
+  let puzzle = await storage.getPuzzleBySlug(ALBATROSS_SLUG);
+  
+  if (!puzzle) {
+    console.log("🧩 Seeding Albatross puzzle into database...");
+    puzzle = await storage.createPuzzle(ALBATROSS_PUZZLE_DATA);
+    console.log(`✅ Albatross puzzle created with ID: ${puzzle.id}`);
+  }
+  
+  return puzzle;
+}
+
+// Helper to resolve puzzle by slug or ID
+async function resolvePuzzle(slugOrId?: string): Promise<Puzzle> {
+  if (!slugOrId) {
+    return ensureAlbatrossPuzzle();
+  }
+  
+  // Try by slug first
+  let puzzle = await storage.getPuzzleBySlug(slugOrId);
+  
+  // Then by ID
+  if (!puzzle) {
+    puzzle = await storage.getPuzzleById(slugOrId);
+  }
+  
+  // Default to Albatross
+  if (!puzzle) {
+    puzzle = await ensureAlbatrossPuzzle();
+  }
+  
+  return puzzle;
+}
+
+function buildConversationHistory(messages: GameMessage[]): Array<{role: "user" | "assistant"; content: string}> {
+  const last10Exchanges = messages.slice(-20);
+  return last10Exchanges.map(msg => ({
+    role: msg.type === "player" ? "user" as const : "assistant" as const,
+    content: msg.content,
+  }));
+}
+
+// ============================================================================
+// ROUTES
+// ============================================================================
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // Setup Replit Auth
+  await setupAuth(app);
+  
+  // Seed Albatross puzzle
+  await ensureAlbatrossPuzzle();
+
+  // ============================================================================
+  // AUTH ROUTES
+  // ============================================================================
+  
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // ============================================================================
+  // PUZZLE ROUTES
+  // ============================================================================
+  
+  app.get('/api/puzzles', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      
+      // If user is pro, show all puzzles. Otherwise, only free puzzles
+      const puzzles = user?.isPro 
+        ? await storage.getActivePuzzles()
+        : await storage.getFreePuzzles();
+      
+      res.json(puzzles);
+    } catch (error) {
+      console.error("Error fetching puzzles:", error);
+      res.status(500).json({ message: "Failed to fetch puzzles" });
+    }
+  });
+
+  app.get('/api/puzzles/:puzzleId', isAuthenticated, async (req: any, res) => {
+    try {
+      const puzzle = await storage.getPuzzleById(req.params.puzzleId);
+      if (!puzzle) {
+        return res.status(404).json({ message: "Puzzle not found" });
+      }
+      res.json(puzzle);
+    } catch (error) {
+      console.error("Error fetching puzzle:", error);
+      res.status(500).json({ message: "Failed to fetch puzzle" });
+    }
+  });
+
+  // ============================================================================
+  // GAME SESSION ROUTES
+  // ============================================================================
+  
+  app.get('/api/session/:puzzleId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { puzzleId: slugOrId } = req.params;
+      
+      // Resolve puzzle from slug or ID
+      const puzzle = await resolvePuzzle(slugOrId);
+      
+      // Get or create game session using the actual puzzle ID
+      let session = await storage.getUserGameSession(userId, puzzle.id);
       
       if (!session) {
-        session = await storage.createGameSession();
+        session = await storage.createGameSession(userId, puzzle.id);
+      }
+      
+      res.json(session);
+    } catch (error) {
+      console.error("Error getting session:", error);
+      res.status(500).json({ message: "Failed to get game session" });
+    }
+  });
+
+  // ============================================================================
+  // GAMEPLAY ROUTES
+  // ============================================================================
+  
+  app.post("/api/ask", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const validation = askQuestionSchema.safeParse(req.body);
+      
+      if (!validation.success) {
+        return res.status(400).json({
+          error: "Invalid request",
+          message: validation.error.errors.map((e) => e.message).join(", "),
+        });
       }
 
-      const conversationHistory = session.messages
-        .filter(m => m.type === "player" || m.type === "system")
-        .slice(-10)
-        .map(m => ({
-          role: m.type === "player" ? "user" as const : "assistant" as const,
-          content: m.type === "player" ? m.content : m.content,
-        }));
+      const { question, puzzleId } = validation.data;
+      
+      // Resolve puzzle from slug or ID
+      const puzzle = await resolvePuzzle(puzzleId);
 
+      // Get or create game session
+      let session = await storage.getUserGameSession(userId, puzzle.id);
+      if (!session) {
+        session = await storage.createGameSession(userId, puzzle.id);
+      }
+
+      // Build conversation history from stored messages
+      const messages = session.messages as GameMessage[];
+      const conversationHistory = buildConversationHistory(messages);
+
+      // Call OpenAI with puzzle-specific prompt
       const completion = await openai.chat.completions.create({
         model: "gpt-4o-mini",
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: puzzle.aiPrompt },
           ...conversationHistory,
           { role: "user", content: question },
         ],
@@ -163,11 +333,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         temperature: 0.7,
       });
 
-      const responseContent = completion.choices[0].message.content;
+      const responseContent = completion.choices[0]?.message?.content;
       if (!responseContent) {
         return res.status(500).json({ 
           error: "No response from AI",
-          message: "The AI service did not return a response. Please try again."
+          message: "The AI did not return a response. Please try again."
         });
       }
 
@@ -237,22 +407,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const playerMessage = {
-        id: session.messages.length,
-        type: "player" as const,
+      const playerMessage: GameMessage = {
+        id: messages.length,
+        type: "player",
         content: question,
         timestamp: Date.now(),
       };
 
-      const systemMessage = {
-        id: session.messages.length + 1,
-        type: "system" as const,
+      const systemMessage: GameMessage = {
+        id: messages.length + 1,
+        type: "system",
         content: explanation,
         response: answer,
         timestamp: Date.now(),
       };
 
-      session.messages.push(playerMessage, systemMessage);
+      const updatedMessages = [...messages, playerMessage, systemMessage];
+      const discoveries = session.discoveries as Discovery[];
+      const discoveredKeys = session.discoveredKeys as DiscoveryKey[];
 
       let newDiscovery: Discovery | undefined;
       if (discoveryKey && discoveryLabel) {
@@ -261,24 +433,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const stage = getDiscoveryStage(key);
         
         // Check if we already have a discovery for this topic
-        const existingDiscoveryIndex = session.discoveries.findIndex(
+        const existingDiscoveryIndex = discoveries.findIndex(
           d => d.topic === topic
         );
         
         if (existingDiscoveryIndex >= 0) {
           // Topic already exists - check if this is an evolution
-          const existingDiscovery = session.discoveries[existingDiscoveryIndex];
+          const existingDiscovery = discoveries[existingDiscoveryIndex];
           if (stage === "evolved" && existingDiscovery.stage === "base") {
             // Evolve the existing discovery
             existingDiscovery.key = key;
             existingDiscovery.label = discoveryLabel;
-            existingDiscovery.stage = stage;
+            existingDiscovery.stage = "evolved";
             existingDiscovery.evolutionTimestamp = Date.now();
             newDiscovery = existingDiscovery;
           }
-          // If same stage or trying to go backwards, ignore
         } else {
-          // New topic - create discovery
+          // New topic discovery
           newDiscovery = {
             key,
             topic,
@@ -286,73 +457,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
             timestamp: Date.now(),
             stage,
           };
-          session.discoveries.push(newDiscovery);
-          session.discoveredTopics.add(topic);
+          discoveries.push(newDiscovery);
         }
-        
-        // Always track the key for auditing
-        session.discoveredKeys.add(key);
+
+        // Update discovered keys set
+        if (!discoveredKeys.includes(key)) {
+          discoveredKeys.push(key);
+        }
       }
 
-      // Check completion based on topics and critical topics
-      const topicCount = session.discoveredTopics.size;
-      const allCriticalTopicsFound = CRITICAL_TOPICS.every(
-        topic => session.discoveredTopics.has(topic)
-      );
-      
-      if (topicCount >= MIN_REQUIRED_TOPICS && allCriticalTopicsFound) {
-        session.isComplete = true;
-      }
+      // Check for completion
+      const discoveredTopics = new Set(discoveries.map(d => d.topic));
+      const hasCriticalTopics = CRITICAL_TOPICS.every(t => discoveredTopics.has(t));
+      const isComplete = discoveredTopics.size >= MIN_REQUIRED_TOPICS && hasCriticalTopics;
 
-      await storage.updateGameSession(session.id, session);
+      const questionCount = Math.floor(updatedMessages.length / 2);
+
+      // Update session in database
+      if (isComplete) {
+        await storage.completeGameSession(session.id, questionCount);
+      } else {
+        await storage.updateGameSession(
+          session.id,
+          updatedMessages,
+          discoveries,
+          discoveredKeys,
+          questionCount
+        );
+      }
 
       const response: AskQuestionResponse = {
         sessionId: session.id,
         response: answer,
         content: explanation,
         discovery: newDiscovery,
-        isComplete: session.isComplete,
-        discoveries: session.discoveries,
-        discoveredKeys: Array.from(session.discoveredKeys),
+        isComplete,
+        discoveries,
+        discoveredKeys,
         progress: {
           total: 8,
-          discovered: session.discoveredTopics.size,
+          discovered: discoveredTopics.size,
         },
       };
 
       res.json(response);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          error: "Invalid request",
-          message: "Your question could not be processed. Please check your input."
-        });
-      }
-
-      console.error("Error processing question:", error);
+    } catch (error: any) {
+      console.error("Error in /api/ask:", error);
       res.status(500).json({ 
-        error: "Server error",
-        message: "An unexpected error occurred. Please try again."
+        error: "Internal server error",
+        message: error.message || "An unexpected error occurred"
       });
     }
   });
 
-  app.post("/api/reset", async (req, res) => {
+  app.post("/api/reset", isAuthenticated, async (req: any, res) => {
     try {
-      const { sessionId } = req.body;
+      const userId = req.user.claims.sub;
+      const { puzzleId } = req.body;
       
-      if (sessionId) {
-        await storage.deleteGameSession(sessionId);
-      }
-
-      const newSession = await storage.createGameSession();
-      res.json({ sessionId: newSession.id });
-    } catch (error) {
-      console.error("Error resetting game:", error);
+      // Resolve puzzle from slug or ID
+      const puzzle = await resolvePuzzle(puzzleId);
+      
+      // Create new session (old ones remain in DB for history)
+      const session = await storage.createGameSession(userId, puzzle.id);
+      
+      res.json({ 
+        sessionId: session.id,
+        message: "Game reset successfully" 
+      });
+    } catch (error: any) {
+      console.error("Error in /api/reset:", error);
       res.status(500).json({ 
         error: "Failed to reset game",
-        message: "Could not reset the game. Please refresh the page."
+        message: error.message 
       });
+    }
+  });
+
+  // ============================================================================
+  // LEADERBOARD ROUTES
+  // ============================================================================
+  
+  app.get('/api/leaderboard/:puzzleId', async (req, res) => {
+    try {
+      const { puzzleId } = req.params;
+      const leaderboard = await storage.getPuzzleLeaderboard(puzzleId, 100);
+      res.json(leaderboard);
+    } catch (error) {
+      console.error("Error fetching leaderboard:", error);
+      res.status(500).json({ message: "Failed to fetch leaderboard" });
     }
   });
 

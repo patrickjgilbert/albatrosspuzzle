@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon } from "lucide-react";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut } from "lucide-react";
 import PuzzleStatement from "@/components/PuzzleStatement";
 import ChatMessage, { type MessageType, type ResponseType } from "@/components/ChatMessage";
 import TypingIndicator from "@/components/TypingIndicator";
@@ -14,7 +14,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { AskQuestionResponse, Discovery } from "@shared/schema";
+import type { AskQuestionResponse, Discovery, GameMessage as DBGameMessage, GameSession } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 
 interface Message {
   id: number;
@@ -26,6 +27,10 @@ interface Message {
 const PUZZLE_STATEMENT =
   "A man walks into a restaurant, orders the albatross soup, takes one bite of it, puts his spoon down, walks out of the restaurant, and shoots himself.";
 
+// Note: puzzleId will be hardcoded to Albatross for now
+// In future: load from route params or puzzle selection page
+const ALBATROSS_PUZZLE_ID = "albatross"; // Will be resolved by server
+
 export default function Game() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -36,6 +41,46 @@ export default function Game() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
   const { toast } = useToast();
+
+  // Load existing game session on mount
+  const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
+    queryKey: ["/api/session", ALBATROSS_PUZZLE_ID],
+    queryFn: async () => {
+      const response = await fetch(`/api/session/${ALBATROSS_PUZZLE_ID}`);
+      if (!response.ok) throw new Error("Failed to load session");
+      return response.json();
+    },
+  });
+
+  // Hydrate local state from loaded session
+  useEffect(() => {
+    if (session) {
+      setSessionId(session.id);
+      
+      // Convert DB messages to UI messages
+      const dbMessages = session.messages as DBGameMessage[];
+      const uiMessages: Message[] = dbMessages.map((msg, idx) => ({
+        id: idx,
+        type: msg.type as MessageType,
+        content: msg.content,
+        response: msg.response as ResponseType | undefined,
+      }));
+      setMessages(uiMessages);
+      messageIdCounter.current = uiMessages.length;
+      
+      // Load discoveries and progress
+      const dbDiscoveries = session.discoveries as Discovery[];
+      setDiscoveries(dbDiscoveries);
+      
+      const discoveredTopics = new Set(dbDiscoveries.map(d => d.topic));
+      setProgress({ total: 8, discovered: discoveredTopics.size });
+      
+      // Check if already complete
+      if (session.isComplete) {
+        setGameComplete(true);
+      }
+    }
+  }, [session]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -63,6 +108,7 @@ export default function Game() {
         },
         body: JSON.stringify({
           sessionId,
+          puzzleId: ALBATROSS_PUZZLE_ID,
           question,
         }),
       });
@@ -127,7 +173,7 @@ export default function Game() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionId,
+          puzzleId: ALBATROSS_PUZZLE_ID,
         }),
       });
 
@@ -142,6 +188,11 @@ export default function Game() {
       setProgress({ total: 8, discovered: 0 });
       setGameComplete(false);
       messageIdCounter.current = 0;
+      
+      toast({
+        title: "Game Reset",
+        description: "Starting fresh! Good luck solving the mystery.",
+      });
     } catch (error) {
       console.error("Error resetting game:", error);
       toast({
@@ -151,6 +202,15 @@ export default function Game() {
       });
     }
   };
+
+  // Show loading while session is being loaded
+  if (sessionLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -194,6 +254,16 @@ export default function Game() {
             data-testid="button-reset"
           >
             <RotateCcw className="w-5 h-5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            data-testid="button-logout"
+          >
+            <a href="/api/logout">
+              <LogOut className="w-5 h-5" />
+            </a>
           </Button>
           <ThemeToggle />
         </div>
