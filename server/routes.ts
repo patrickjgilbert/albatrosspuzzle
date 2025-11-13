@@ -540,8 +540,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get('/api/leaderboard/:puzzleId', async (req, res) => {
     try {
-      const { puzzleId } = req.params;
-      const leaderboard = await storage.getPuzzleLeaderboard(puzzleId, 100);
+      const { puzzleId: slugOrId } = req.params;
+      
+      // Resolve puzzle from slug or ID
+      const puzzle = await resolvePuzzle(slugOrId);
+      
+      const leaderboard = await storage.getPuzzleLeaderboard(puzzle.id, 100);
       res.json(leaderboard);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);

@@ -58,7 +58,7 @@ export interface IStorage {
   // LEADERBOARD OPERATIONS
   // ============================================================================
   getPuzzleLeaderboard(puzzleId: string, limit?: number): Promise<Array<{
-    user: User;
+    displayName: string;
     questionCount: number;
     completedAt: Date;
   }>>;
@@ -265,13 +265,14 @@ export class DatabaseStorage implements IStorage {
   // ============================================================================
   
   async getPuzzleLeaderboard(puzzleId: string, limit: number = 100): Promise<Array<{
-    user: User;
+    displayName: string;
     questionCount: number;
     completedAt: Date;
   }>> {
     const results = await db
       .select({
-        user: users,
+        firstName: users.firstName,
+        lastName: users.lastName,
         questionCount: gameSessions.questionCount,
         completedAt: gameSessions.completedAt,
       })
@@ -287,7 +288,9 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
 
     return results.map(r => ({
-      user: r.user,
+      displayName: (r.firstName && r.lastName) 
+        ? `${r.firstName} ${r.lastName}` 
+        : "Anonymous Player",
       questionCount: r.questionCount,
       completedAt: r.completedAt!,
     }));

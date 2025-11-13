@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon, LogOut } from "lucide-react";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy } from "lucide-react";
+import { Link } from "wouter";
 import PuzzleStatement from "@/components/PuzzleStatement";
 import ChatMessage, { type MessageType, type ResponseType } from "@/components/ChatMessage";
 import TypingIndicator from "@/components/TypingIndicator";
@@ -247,6 +248,16 @@ export default function Game() {
               </div>
             </PopoverContent>
           </Popover>
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            data-testid="button-leaderboard"
+          >
+            <Link href="/leaderboard">
+              <Trophy className="w-5 h-5" />
+            </Link>
+          </Button>
           <Button
             variant="ghost"
             size="icon"
