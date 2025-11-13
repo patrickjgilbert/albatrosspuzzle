@@ -6,7 +6,20 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**UX and Discovery Improvements (Latest - November 12, 2025)**
+**SaaS Transformation Complete (Latest - November 13, 2025)**
+- Transformed from demo app to full SaaS platform with PostgreSQL database, authentication, and subscriptions
+- Integrated Replit Auth supporting Google login and email/password authentication
+- All gameplay data now persisted to database: users, puzzles, game sessions, discoveries, messages
+- Implemented slug-based puzzle resolution system ("albatross" → numeric ID) for backwards compatibility
+- Built leaderboard page showing top players by fewest questions (privacy-safe: displays names only, not emails)
+- Integrated Stripe for $1/month Pro subscriptions with automated billing and status webhooks
+- Created subscription page with secure payment form and upgrade flow
+- Added "Upgrade to Pro" button in game header for free users
+- Database schema includes: users, puzzles, game_sessions (ready for future pro-only puzzles)
+- Sessions persist across page reloads and device changes for authenticated users
+- Landing page for non-authenticated visitors with value proposition and CTAs
+
+**UX and Discovery Improvements (November 12, 2025)**
 - Fixed chat layout to keep puzzle prompt and detective board always visible while only chat messages scroll
 - Optimized space allocation: larger input box (h-14), smaller post-it notes (96-112px), compact puzzle prompt
 - Improved conversation visibility: 5+ messages visible in chat area without scrolling
@@ -80,14 +93,18 @@ Preferred communication style: Simple, everyday language.
 
 **Server Framework**
 - Express.js REST API with TypeScript
-- In-memory storage implementation (MemStorage) for development/demo purposes
-- Session-based game state management without user authentication
+- PostgreSQL database with Drizzle ORM for data persistence
+- Replit Auth for user authentication (Google + email/password)
+- Stripe integration for subscription management
 
 **API Design**
-- RESTful endpoints for game interactions
+- RESTful endpoints for game interactions, authentication, and subscriptions
 - JSON request/response format with Zod schema validation
-- Primary endpoint: `POST /api/ask` - handles question answering with session management
-- Reset endpoint: `POST /api/reset` - creates new game session
+- Auth routes: `POST /api/login`, `POST /api/logout`, `GET /api/auth/user`
+- Game endpoints: `POST /api/ask`, `POST /api/reset`, `GET /api/session/:puzzleId`
+- Puzzle routes: `GET /api/puzzles`, `GET /api/puzzles/:puzzleId`
+- Leaderboard: `GET /api/leaderboard/:puzzleId`
+- Stripe routes: `POST /api/create-subscription`, `POST /api/cancel-subscription`, `POST /api/stripe/webhook`
 
 **Game Logic Flow**
 1. Client sends question with optional sessionId
@@ -115,33 +132,40 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 
 **Current Implementation**
-- In-memory Map-based storage (MemStorage class)
-- No database persistence - sessions lost on server restart
-- Suitable for stateless, single-session gameplay
+- PostgreSQL database (Neon-backed) with Drizzle ORM
+- Full data persistence for users, puzzles, game sessions
+- Database schema: users, puzzles, game_sessions tables
+- Drizzle schema in `shared/schema.ts`, storage layer in `server/storage.ts`
 
-**Schema Definition**
-- Drizzle ORM configured for PostgreSQL (via drizzle.config.ts and schema definitions)
-- Database schema defined but not actively used with current MemStorage implementation
-- User table defined but authentication not implemented
-- Infrastructure ready for migration to persistent storage when needed
+**Database Schema**
+- `users` table: Authentication data, Stripe customer/subscription IDs, Pro status
+- `puzzles` table: Puzzle content, AI prompts, difficulty, free vs. pro access
+- `game_sessions` table: User progress, messages, discoveries, completion status
 
 **Game Session Structure**
 ```typescript
 {
-  id: string,
-  messages: GameMessage[],
-  discoveries: Discovery[],  // Structured objects with key and label
-  discoveredKeys: Set<DiscoveryKey>,  // Deduplication tracking
+  id: string (UUID),
+  userId: string,
+  puzzleId: string,
+  messages: GameMessage[] (JSON),
+  discoveries: Discovery[] (JSON),
+  discoveredKeys: string[] (JSON),
   isComplete: boolean,
-  createdAt: number
+  questionCount: number,
+  completedAt: Date | null,
+  createdAt: Date,
+  updatedAt: Date
 }
 ```
 
 ### External Dependencies
 
 **Third-Party Services**
-- **OpenAI API**: Core game master functionality, GPT model processes questions and generates contextual responses
-- **Neon Database**: Serverless PostgreSQL configured via @neondatabase/serverless (infrastructure ready, not actively used)
+- **OpenAI API**: Core game master functionality, GPT-4o-mini processes questions and generates contextual responses
+- **Neon Database**: Serverless PostgreSQL for data persistence (users, puzzles, sessions)
+- **Replit Auth**: Authentication service supporting Google OAuth and email/password
+- **Stripe**: Payment processing for $1/month Pro subscriptions
 
 **Key Libraries**
 - **Drizzle ORM**: Type-safe ORM for PostgreSQL with schema-first approach

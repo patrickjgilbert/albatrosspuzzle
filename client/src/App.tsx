@@ -7,6 +7,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Game from "@/pages/game";
 import Landing from "@/pages/landing";
 import Leaderboard from "@/pages/leaderboard";
+import Subscribe from "@/pages/subscribe";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -32,7 +33,8 @@ function Router() {
         <>
           <Route path="/" component={Game} />
           <Route path="/leaderboard" component={Leaderboard} />
-          {/* Future routes: /puzzles, /profile, /subscribe */}
+          <Route path="/subscribe" component={Subscribe} />
+          {/* Future routes: /puzzles, /profile */}
         </>
       )}
       <Route component={NotFound} />

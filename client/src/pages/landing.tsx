@@ -75,9 +75,12 @@ export default function Landing() {
                   Play the Albatross puzzle for free. Upgrade to Pro for $1/month to access unlimited puzzles.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-2">
                 <Button className="w-full" size="lg" asChild>
                   <a href="/api/login">Start Solving</a>
+                </Button>
+                <Button variant="outline" className="w-full" size="lg" asChild>
+                  <a href="/leaderboard">View Leaderboard</a>
                 </Button>
               </CardContent>
             </Card>

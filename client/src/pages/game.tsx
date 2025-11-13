@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy } from "lucide-react";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown } from "lucide-react";
 import { Link } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
 import PuzzleStatement from "@/components/PuzzleStatement";
 import ChatMessage, { type MessageType, type ResponseType } from "@/components/ChatMessage";
 import TypingIndicator from "@/components/TypingIndicator";
@@ -42,6 +43,7 @@ export default function Game() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Load existing game session on mount
   const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
@@ -248,6 +250,19 @@ export default function Game() {
               </div>
             </PopoverContent>
           </Popover>
+          {!user?.isPro && (
+            <Button
+              variant="default"
+              size="sm"
+              asChild
+              data-testid="button-upgrade"
+            >
+              <Link href="/subscribe">
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Pro
+              </Link>
+            </Button>
+          )}
           <Button
             variant="ghost"
             size="icon"
