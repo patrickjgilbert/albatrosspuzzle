@@ -1,23 +1,147 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, jsonb, integer, boolean, index } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// ============================================================================
+// AUTH TABLES (Required for Replit Auth)
+// ============================================================================
+
+// Session storage table - required for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table - extended for our SaaS features
 export const users = pgTable("users", {
+  // Replit Auth required fields
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  
+  // Stripe subscription fields
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  isPro: boolean("is_pro").default(false).notNull(),
+  subscriptionExpiresAt: timestamp("subscription_expires_at"),
+  
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
-
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 
-// Discovery keys - progressive system with base and evolved states
+// ============================================================================
+// PUZZLE SYSTEM
+// ============================================================================
+
+export const puzzles = pgTable("puzzles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar("slug").notNull().unique(), // URL-friendly identifier
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  prompt: text("prompt").notNull(), // The initial puzzle statement
+  isFree: boolean("is_free").default(false).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  difficulty: varchar("difficulty").default("medium").notNull(), // easy, medium, hard
+  averageQuestions: integer("average_questions"), // Track average completion
+  completionCount: integer("completion_count").default(0).notNull(),
+  
+  // AI configuration for this puzzle
+  aiPrompt: text("ai_prompt").notNull(), // The system prompt for OpenAI
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertPuzzleSchema = createInsertSchema(puzzles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  averageQuestions: true,
+  completionCount: true,
+});
+
+export type InsertPuzzle = z.infer<typeof insertPuzzleSchema>;
+export type Puzzle = typeof puzzles.$inferSelect;
+
+// ============================================================================
+// GAME SESSIONS - Track user progress on puzzles
+// ============================================================================
+
+export const gameSessions = pgTable(
+  "game_sessions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }).notNull(),
+    puzzleId: varchar("puzzle_id").references(() => puzzles.id, { onDelete: "cascade" }).notNull(),
+    
+    // Progress tracking
+    messages: jsonb("messages").default([]).notNull(), // Array of GameMessage
+    discoveries: jsonb("discoveries").default([]).notNull(), // Array of Discovery
+    discoveredKeys: jsonb("discovered_keys").default([]).notNull(), // Array of DiscoveryKey
+    
+    // Completion metrics
+    isComplete: boolean("is_complete").default(false).notNull(),
+    questionCount: integer("question_count").default(0).notNull(),
+    completedAt: timestamp("completed_at"),
+    
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_game_sessions_user_puzzle").on(table.userId, table.puzzleId),
+    index("idx_game_sessions_leaderboard").on(table.puzzleId, table.isComplete, table.questionCount),
+  ]
+);
+
+export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
+export type GameSession = typeof gameSessions.$inferSelect;
+
+// ============================================================================
+// RELATIONS
+// ============================================================================
+
+export const usersRelations = relations(users, ({ many }) => ({
+  gameSessions: many(gameSessions),
+}));
+
+export const puzzlesRelations = relations(puzzles, ({ many }) => ({
+  gameSessions: many(puzzles),
+}));
+
+export const gameSessionsRelations = relations(gameSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [gameSessions.userId],
+    references: [users.id],
+  }),
+  puzzle: one(puzzles, {
+    fields: [gameSessions.puzzleId],
+    references: [puzzles.id],
+  }),
+}));
+
+// ============================================================================
+// DISCOVERY TYPES (from original game logic)
+// ============================================================================
+
 export const DISCOVERY_KEYS = {
   VESSEL: "VESSEL",
   VESSEL_SANK: "VESSEL_SANK",
@@ -37,7 +161,6 @@ export const DISCOVERY_KEYS = {
 
 export type DiscoveryKey = (typeof DISCOVERY_KEYS)[keyof typeof DISCOVERY_KEYS];
 
-// Topic mapping - each discovery key maps to a canonical topic
 export const DISCOVERY_TOPICS: Record<DiscoveryKey, string> = {
   VESSEL: "VESSEL",
   VESSEL_SANK: "VESSEL",
@@ -55,7 +178,6 @@ export const DISCOVERY_TOPICS: Record<DiscoveryKey, string> = {
   SUICIDE: "OUTCOME",
 };
 
-// Stage determination - which keys are evolved states
 export const EVOLVED_KEYS: Set<DiscoveryKey> = new Set<DiscoveryKey>([
   "VESSEL_SANK" as DiscoveryKey,
   "FAMILY_DIED" as DiscoveryKey,
@@ -65,10 +187,7 @@ export const EVOLVED_KEYS: Set<DiscoveryKey> = new Set<DiscoveryKey>([
   "SUICIDE" as DiscoveryKey,
 ]);
 
-// Critical topics that MUST be discovered to complete the game
 export const CRITICAL_TOPICS = ["DECEPTION", "RESTAURANT", "FOOD"];
-
-// Minimum required unique topics to complete (allows missing a few non-critical topics)
 export const MIN_REQUIRED_TOPICS = 6;
 
 export type DiscoveryStage = "base" | "evolved";
@@ -82,7 +201,6 @@ export interface Discovery {
   evolutionTimestamp?: number;
 }
 
-// Game session types
 export interface GameMessage {
   id: number;
   type: "player" | "system" | "discovery";
@@ -91,19 +209,13 @@ export interface GameMessage {
   timestamp: number;
 }
 
-export interface GameSession {
-  id: string;
-  messages: GameMessage[];
-  discoveries: Discovery[];
-  discoveredTopics: Set<string>;
-  discoveredKeys: Set<DiscoveryKey>;
-  isComplete: boolean;
-  createdAt: number;
-}
+// ============================================================================
+// API SCHEMAS
+// ============================================================================
 
-// API request/response schemas
 export const askQuestionSchema = z.object({
   sessionId: z.string().nullable().optional(),
+  puzzleId: z.string().optional(), // Now required to know which puzzle
   question: z.string().min(1).max(500),
 });
 
@@ -123,12 +235,14 @@ export interface AskQuestionResponse {
   };
 }
 
-// Helper function to get topic for a discovery key
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
 export function getDiscoveryTopic(key: DiscoveryKey): string {
   return DISCOVERY_TOPICS[key];
 }
 
-// Helper function to determine stage
 export function getDiscoveryStage(key: DiscoveryKey): DiscoveryStage {
   return EVOLVED_KEYS.has(key) ? "evolved" : "base";
 }
