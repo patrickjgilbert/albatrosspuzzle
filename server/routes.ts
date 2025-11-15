@@ -699,6 +699,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "USER",
       });
 
+      // Migrate guest sessions if this user was previously a guest
+      const guestId = req.cookies.guestId;
+      if (guestId) {
+        try {
+          await storage.migrateGuestSessions(guestId, user.id);
+          console.log(`Migrated guest sessions from ${guestId} to user ${user.id}`);
+        } catch (migrationError) {
+          console.error("Error migrating guest sessions:", migrationError);
+          // Don't fail registration if migration fails
+        }
+      }
+
       // Log user in by setting session
       req.login({ claims: { sub: user.id } }, (err) => {
         if (err) {

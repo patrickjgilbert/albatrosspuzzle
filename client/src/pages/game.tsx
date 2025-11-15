@@ -8,6 +8,7 @@ import ChatMessage, { type MessageType, type ResponseType } from "@/components/C
 import TypingIndicator from "@/components/TypingIndicator";
 import ChatInput from "@/components/ChatInput";
 import GameCompletionModal from "@/components/GameCompletionModal";
+import AccountPromptModal from "@/components/AccountPromptModal";
 import ThemeToggle from "@/components/ThemeToggle";
 import { DetectiveBoard } from "@/components/DetectiveBoard";
 import { useToast } from "@/hooks/use-toast";
@@ -33,10 +34,13 @@ export default function Game() {
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [progress, setProgress] = useState({ total: 8, discovered: 0 });
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [showAccountPrompt, setShowAccountPrompt] = useState(false);
+  const [accountPromptTrigger, setAccountPromptTrigger] = useState<"first_discovery" | "completion">("first_discovery");
+  const hasShownFirstDiscoveryPrompt = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageIdCounter = useRef(0);
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   // Extract slug from URL params, default to "albatross" for backward compatibility
   const [match, params] = useRoute("/game/:slug");
@@ -152,11 +156,28 @@ export default function Game() {
 
       if (data.discovery) {
         setDiscoveries(data.discoveries);
+        
+        // Show account prompt after first YES response for guests
+        if (!isAuthenticated && data.response === "YES" && !hasShownFirstDiscoveryPrompt.current) {
+          hasShownFirstDiscoveryPrompt.current = true;
+          setTimeout(() => {
+            setAccountPromptTrigger("first_discovery");
+            setShowAccountPrompt(true);
+          }, 1500);
+        }
       }
 
       if (data.isComplete) {
         setTimeout(() => {
           setGameComplete(true);
+          
+          // Show account prompt after completion for guests
+          if (!isAuthenticated) {
+            setTimeout(() => {
+              setAccountPromptTrigger("completion");
+              setShowAccountPrompt(true);
+            }, 2000);
+          }
         }, 1000);
       }
     } catch (error) {
@@ -217,6 +238,12 @@ export default function Game() {
         variant: "destructive",
       });
     }
+  };
+
+  const handleAccountCreated = async () => {
+    // Migration happens automatically on the server when a guest registers
+    // Just refresh the page to get the new user context
+    window.location.reload();
   };
 
   // Show loading while puzzle or session is being loaded
@@ -409,6 +436,13 @@ export default function Game() {
         onClose={() => setGameComplete(false)}
         onPlayAgain={handleReset}
         discoveries={discoveries}
+      />
+
+      <AccountPromptModal
+        open={showAccountPrompt}
+        onOpenChange={setShowAccountPrompt}
+        onSuccess={handleAccountCreated}
+        trigger={accountPromptTrigger}
       />
     </div>
   );
