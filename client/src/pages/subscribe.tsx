@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Check, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
@@ -72,7 +72,7 @@ export default function Subscribe() {
   const requestInFlightRef = useRef(false);
   const { toast} = useToast();
 
-  const initializePayment = () => {
+  const initializePayment = async () => {
     // Prevent concurrent requests using ref (survives re-renders)
     if (requestInFlightRef.current) {
       return;
@@ -85,52 +85,51 @@ export default function Subscribe() {
     setStatus("loading");
     setErrorMessage("");
 
-    apiRequest("POST", "/api/create-subscription", {})
-      .then((data: any) => {
-        // Production: remove logging before deploy
+    try {
+      const response = await apiRequest("POST", "/api/create-subscription", {});
+      const data = await parseJsonResponse<{ clientSecret?: string; message?: string }>(response);
+
+      // Production: remove logging before deploy
+      if (import.meta.env.DEV) {
+        console.log("Payment intent response:", data);
+      }
+
+      if (data.clientSecret) {
+        setClientSecret(data.clientSecret);
+        setStatus("ready");
+      } else if (data.message) {
+        // Server explicitly returned a message (only happens for "already pro" case)
+        setClientSecret(""); // No payment needed
+        setStatus("already-pro");
+        toast({
+          title: "Already Pro",
+          description: "You already have lifetime Pro access!",
+        });
+      } else {
+        // Unexpected response format
         if (import.meta.env.DEV) {
-          console.log("Payment intent response:", data);
-        }
-        
-        if (data.clientSecret) {
-          setClientSecret(data.clientSecret);
-          setStatus("ready");
-        } else if (data.message) {
-          // Server explicitly returned a message (only happens for "already pro" case)
-          // Errors throw exceptions and go through .catch()
-          setClientSecret(""); // No payment needed
-          setStatus("already-pro");
-          toast({
-            title: "Already Pro",
-            description: "You already have lifetime Pro access!",
-          });
-        } else {
-          // Unexpected response format
-          if (import.meta.env.DEV) {
-            console.error("Unexpected response:", data);
-          }
-          setClientSecret(""); // Clear on error
-          setErrorMessage("Unexpected response from server. Please try again.");
-          setStatus("error");
-        }
-      })
-      .catch((error: any) => {
-        if (import.meta.env.DEV) {
-          console.error("Payment initialization error:", error);
+          console.error("Unexpected response:", data);
         }
         setClientSecret(""); // Clear on error
-        setErrorMessage(error.message || "Failed to initialize payment. Please try again.");
+        setErrorMessage("Unexpected response from server. Please try again.");
         setStatus("error");
-        toast({
-          title: "Error",
-          description: error.message || "Failed to initialize payment",
-          variant: "destructive",
-        });
-      })
-      .finally(() => {
-        requestInFlightRef.current = false;
-        setIsRetrying(false);
+      }
+    } catch (error: any) {
+      if (import.meta.env.DEV) {
+        console.error("Payment initialization error:", error);
+      }
+      setClientSecret(""); // Clear on error
+      setErrorMessage(error.message || "Failed to initialize payment. Please try again.");
+      setStatus("error");
+      toast({
+        title: "Error",
+        description: error.message || "Failed to initialize payment",
+        variant: "destructive",
       });
+    } finally {
+      requestInFlightRef.current = false;
+      setIsRetrying(false);
+    }
   };
 
   useEffect(() => {

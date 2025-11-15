@@ -23,6 +23,17 @@ export async function apiRequest(
   return res;
 }
 
+// Helper for safely parsing JSON responses with Content-Type checking
+export async function parseJsonResponse<T = any>(response: Response): Promise<T> {
+  const contentType = response.headers.get("content-type");
+  if (contentType && contentType.includes("application/json")) {
+    return await response.json();
+  }
+  // Fallback to text for non-JSON responses
+  const text = await response.text();
+  throw new Error(text || `Unexpected content-type: ${contentType}`);
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
