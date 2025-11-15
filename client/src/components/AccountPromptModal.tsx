@@ -29,15 +29,13 @@ export default function AccountPromptModal({
 }: AccountPromptModalProps) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState("");
   const { toast } = useToast();
 
   const registerMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/register", {
+      const response = await apiRequest("POST", "/api/auth/register", {
         username,
         password,
-        email,
       });
       return await response.json();
     },
@@ -105,25 +103,13 @@ export default function AccountPromptModal({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="email">Email (optional)</Label>
-            <Input
-              id="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="your@email.com"
-              data-testid="input-email"
-            />
-          </div>
-          
-          <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
             <Input
               id="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Create a password"
+              placeholder="Create a password (min 8 characters)"
               required
               data-testid="input-password"
             />

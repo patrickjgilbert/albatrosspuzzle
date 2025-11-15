@@ -33,17 +33,22 @@ function Router() {
       <Route path="/game/:slug" component={Game} />
       <Route path="/game" component={Game} />
       
+      {/* Puzzle selection - accessible to both guests and authenticated users */}
+      <Route path="/puzzles" component={PuzzlesPage} />
+      
+      {/* Leaderboard - accessible to everyone */}
+      <Route path="/leaderboard" component={Leaderboard} />
+      
+      {/* Subscription - accessible to everyone (guests will be prompted to register) */}
+      <Route path="/subscribe" component={Subscribe} />
+      
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
-          <Route path="/leaderboard" component={Leaderboard} />
         </>
       ) : (
         <>
           <Route path="/" component={PuzzlesPage} />
-          <Route path="/puzzles" component={PuzzlesPage} />
-          <Route path="/leaderboard" component={Leaderboard} />
-          <Route path="/subscribe" component={Subscribe} />
         </>
       )}
       <Route component={NotFound} />

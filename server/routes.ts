@@ -65,7 +65,7 @@ const LIGHTHOUSE_KEEPER_PUZZLE_DATA = {
   prompt: "A lighthouse keeper is found dead at the top of the lighthouse with a broken lamp beside him. There are no signs of violence.",
   isFree: false,
   isActive: true,
-  difficulty: "medium",
+  difficulty: "hard",
   aiPrompt: buildLighthouseKeeperSystemPrompt(),
 };
 
@@ -76,7 +76,7 @@ const LAST_PHONE_CALL_PUZZLE_DATA = {
   prompt: "A woman receives a phone call, says 'thank you' with tears in her eyes, and immediately books a flight.",
   isFree: false,
   isActive: true,
-  difficulty: "medium",
+  difficulty: "hard",
   aiPrompt: buildLastPhoneCallSystemPrompt(),
 };
 
@@ -98,7 +98,7 @@ const EMPTY_RESTAURANT_PUZZLE_DATA = {
   prompt: "A restaurant is completely empty with meals still warm on every table, but no one returns.",
   isFree: false,
   isActive: true,
-  difficulty: "medium",
+  difficulty: "hard",
   aiPrompt: buildEmptyRestaurantSystemPrompt(),
 };
 
@@ -109,7 +109,7 @@ const SILENT_CONCERT_PUZZLE_DATA = {
   prompt: "Thousands of people attend a concert where no music is played, yet everyone is deeply moved.",
   isFree: false,
   isActive: true,
-  difficulty: "medium",
+  difficulty: "hard",
   aiPrompt: buildSilentConcertSystemPrompt(),
 };
 
