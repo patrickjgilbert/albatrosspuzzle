@@ -18,10 +18,18 @@ import {
 import OpenAI from "openai";
 import Stripe from "stripe";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import type { User } from "@shared/schema";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+// Helper to sanitize user data before sending to client
+function sanitizeUser(user: User) {
+  const { passwordHash, ...safeUser } = user;
+  return safeUser;
+}
 
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
@@ -229,10 +237,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.claims.sub;
       const user = await storage.getUser(userId);
-      res.json(user);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json(sanitizeUser(user));
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // Username/password registration
+  const registerSchema = z.object({
+    username: z.string().min(3).max(50),
+    password: z.string().min(8).max(100),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
+  });
+
+  app.post('/api/auth/register', async (req, res) => {
+    try {
+      const { username, password, firstName, lastName } = registerSchema.parse(req.body);
+      
+      // Check if username already exists
+      const existing = await storage.getUserByUsername(username);
+      if (existing) {
+        return res.status(400).json({ message: "Username already taken" });
+      }
+
+      // Hash password
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        username,
+        passwordHash,
+        firstName,
+        lastName,
+        role: "USER",
+      });
+
+      // Log user in by setting session
+      req.login({ claims: { sub: user.id } }, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Failed to log in after registration" });
+        }
+        res.json({ user: sanitizeUser(user), message: "Registration successful" });
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to register" });
+    }
+  });
+
+  // Username/password login
+  const loginSchema = z.object({
+    username: z.string(),
+    password: z.string(),
+  });
+
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { username, password } = loginSchema.parse(req.body);
+
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user || !user.passwordHash) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Verify password
+      const isValid = await bcrypt.compare(password, user.passwordHash);
+      if (!isValid) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Log user in
+      req.login({ claims: { sub: user.id } }, (err) => {
+        if (err) {
+          console.error("Login error:", err);
+          return res.status(500).json({ message: "Failed to log in" });
+        }
+        res.json({ user: sanitizeUser(user), message: "Login successful" });
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Failed to log in" });
     }
   });
 
