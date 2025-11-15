@@ -603,12 +603,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create subscription ($1/month = 100 cents)
+      // Using the product ID from Stripe: prod_TQZ8Ei9K6Y46XJ
       const subscription = await stripe.subscriptions.create({
         customer: customerId,
         items: [{
           price_data: {
             currency: 'usd',
-            product: 'Pro Subscription',
+            product: 'prod_TQZ8Ei9K6Y46XJ', // Your Stripe Product ID
             recurring: {
               interval: 'month',
             },
