@@ -28,6 +28,13 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
   
+  // Local username/password authentication
+  username: varchar("username").unique(),
+  passwordHash: varchar("password_hash"),
+  
+  // Authorization
+  role: varchar("role").default("USER").notNull(), // USER or ADMIN
+  
   // Stripe subscription fields
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
@@ -60,6 +67,9 @@ export const puzzles = pgTable("puzzles", {
   
   // AI configuration for this puzzle
   aiPrompt: text("ai_prompt").notNull(), // The system prompt for OpenAI
+  
+  // Detailed puzzle configuration (discovery mappings, post-it images, etc.)
+  config: jsonb("config"), // Stores discovery system, image paths, etc.
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -106,6 +116,36 @@ export const gameSessions = pgTable(
   ]
 );
 
+// Guest sessions for anonymous users (before account creation)
+export const guestSessions = pgTable(
+  "guest_sessions",
+  {
+    id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+    guestId: varchar("guest_id").notNull(), // Cookie-based identifier
+    puzzleId: varchar("puzzle_id").references(() => puzzles.id, { onDelete: "cascade" }).notNull(),
+    
+    // Progress tracking (same as game_sessions)
+    messages: jsonb("messages").default([]).notNull(),
+    discoveries: jsonb("discoveries").default([]).notNull(),
+    discoveredKeys: jsonb("discovered_keys").default([]).notNull(),
+    
+    // Completion metrics
+    isComplete: boolean("is_complete").default(false).notNull(),
+    questionCount: integer("question_count").default(0).notNull(),
+    completedAt: timestamp("completed_at"),
+    
+    // Migration tracking - set when guest creates account
+    migratedToUserId: varchar("migrated_to_user_id").references(() => users.id, { onDelete: "set null" }),
+    migratedAt: timestamp("migrated_at"),
+    
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("idx_guest_sessions_guest_puzzle").on(table.guestId, table.puzzleId),
+  ]
+);
+
 export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
   id: true,
   createdAt: true,
@@ -114,6 +154,17 @@ export const insertGameSessionSchema = createInsertSchema(gameSessions).omit({
 
 export type InsertGameSession = z.infer<typeof insertGameSessionSchema>;
 export type GameSession = typeof gameSessions.$inferSelect;
+
+export const insertGuestSessionSchema = createInsertSchema(guestSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  migratedToUserId: true,
+  migratedAt: true,
+});
+
+export type InsertGuestSession = z.infer<typeof insertGuestSessionSchema>;
+export type GuestSession = typeof guestSessions.$inferSelect;
 
 // ============================================================================
 // RELATIONS
@@ -135,6 +186,17 @@ export const gameSessionsRelations = relations(gameSessions, ({ one }) => ({
   puzzle: one(puzzles, {
     fields: [gameSessions.puzzleId],
     references: [puzzles.id],
+  }),
+}));
+
+export const guestSessionsRelations = relations(guestSessions, ({ one }) => ({
+  puzzle: one(puzzles, {
+    fields: [guestSessions.puzzleId],
+    references: [puzzles.id],
+  }),
+  migratedUser: one(users, {
+    fields: [guestSessions.migratedToUserId],
+    references: [users.id],
   }),
 }));
 
