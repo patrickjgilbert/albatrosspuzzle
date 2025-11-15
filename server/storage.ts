@@ -36,6 +36,25 @@ export interface IStorage {
   // Admin operations
   getAllUsers(): Promise<User[]>;
   getAllGameSessions(): Promise<GameSession[]>;
+  getAdminStats(): Promise<{
+    totalUsers: number;
+    proUsers: number;
+    guestSessions: number;
+    totalSessions: number;
+    completedSessions: number;
+  }>;
+  getAllSessionsWithDetails(): Promise<Array<{
+    id: string;
+    userId: string;
+    puzzleId: string;
+    username: string | null;
+    puzzleSlug: string;
+    questionCount: number;
+    discoveredKeys: string[];
+    isComplete: boolean;
+    completedAt: string | null;
+    createdAt: string;
+  }>>;
   
   // ============================================================================
   // PUZZLE OPERATIONS
@@ -463,6 +482,52 @@ export class DatabaseStorage implements IStorage {
         : r.username || "Anonymous Player",
       questionCount: r.questionCount,
       completedAt: r.completedAt!,
+    }));
+  }
+
+  // ============================================================================
+  // ADMIN OPERATIONS
+  // ============================================================================
+
+  async getAdminStats() {
+    const allUsers = await db.select().from(users);
+    const allSessions = await db.select().from(gameSessions);
+    const allGuestSessions = await db.select().from(guestSessions);
+
+    return {
+      totalUsers: allUsers.length,
+      proUsers: allUsers.filter(u => u.isPro).length,
+      guestSessions: allGuestSessions.length,
+      totalSessions: allSessions.length,
+      completedSessions: allSessions.filter(s => s.isComplete).length,
+    };
+  }
+
+  async getAllSessionsWithDetails() {
+    const sessions = await db
+      .select({
+        id: gameSessions.id,
+        userId: gameSessions.userId,
+        puzzleId: gameSessions.puzzleId,
+        username: users.username,
+        puzzleSlug: puzzles.slug,
+        questionCount: gameSessions.questionCount,
+        discoveredKeys: gameSessions.discoveredKeys,
+        isComplete: gameSessions.isComplete,
+        completedAt: gameSessions.completedAt,
+        createdAt: gameSessions.createdAt,
+      })
+      .from(gameSessions)
+      .leftJoin(users, eq(gameSessions.userId, users.id))
+      .leftJoin(puzzles, eq(gameSessions.puzzleId, puzzles.id))
+      .orderBy(desc(gameSessions.createdAt));
+
+    return sessions.map(s => ({
+      ...s,
+      puzzleSlug: s.puzzleSlug || 'unknown',
+      discoveredKeys: Array.isArray(s.discoveredKeys) ? s.discoveredKeys : [],
+      completedAt: s.completedAt ? s.completedAt.toISOString() : null,
+      createdAt: s.createdAt.toISOString(),
     }));
   }
 }

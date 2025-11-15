@@ -8,6 +8,7 @@ import Game from "@/pages/game";
 import Landing from "@/pages/landing";
 import Leaderboard from "@/pages/leaderboard";
 import Subscribe from "@/pages/subscribe";
+import AdminPage from "@/pages/admin";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,9 @@ function Router() {
 
   return (
     <Switch>
+      {/* Admin route - accessible regardless of auth status */}
+      <Route path="/admin" component={AdminPage} />
+      
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />

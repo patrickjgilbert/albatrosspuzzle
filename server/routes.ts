@@ -871,6 +871,124 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ============================================================================
+  // ADMIN ROUTES
+  // ============================================================================
+
+  // Admin authentication middleware
+  function isAdminAuthenticated(req: Request, res: Response, next: NextFunction) {
+    const session = (req as any).session;
+    if (session?.isAdmin) {
+      return next();
+    }
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  // Admin login
+  const adminLoginSchema = z.object({
+    username: z.string(),
+    password: z.string(),
+  });
+
+  app.post('/api/admin/login', async (req, res) => {
+    try {
+      const { username, password } = adminLoginSchema.parse(req.body);
+      
+      const adminUsername = process.env.ADMIN_USERNAME;
+      const adminPassword = process.env.ADMIN_PASSWORD;
+
+      if (!adminUsername || !adminPassword) {
+        console.error("Admin credentials not configured");
+        return res.status(500).json({ message: "Admin access not configured" });
+      }
+
+      if (username === adminUsername && password === adminPassword) {
+        // Regenerate session ID to prevent session fixation
+        (req as any).session.regenerate((err: any) => {
+          if (err) {
+            console.error("Session regeneration error:", err);
+            return res.status(500).json({ message: "Login failed" });
+          }
+          (req as any).session.isAdmin = true;
+          return res.json({ message: "Login successful" });
+        });
+      } else {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input" });
+      }
+      console.error("Admin login error:", error);
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin logout
+  app.post('/api/admin/logout', isAdminAuthenticated, async (req, res) => {
+    try {
+      // Destroy the session completely to invalidate the cookie
+      (req as any).session.destroy((err: any) => {
+        if (err) {
+          console.error("Session destruction error:", err);
+          return res.status(500).json({ message: "Logout failed" });
+        }
+        // Clear the session cookie
+        res.clearCookie('connect.sid');
+        res.json({ message: "Logout successful" });
+      });
+    } catch (error) {
+      console.error("Admin logout error:", error);
+      res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
+  // Admin stats
+  app.get('/api/admin/stats', isAdminAuthenticated, async (req, res) => {
+    try {
+      const stats = await storage.getAdminStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Admin users list
+  app.get('/api/admin/users', isAdminAuthenticated, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      // Sanitize all users before sending
+      const sanitizedUsers = users.map(sanitizeUser);
+      res.json(sanitizedUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  // Admin sessions list
+  app.get('/api/admin/sessions', isAdminAuthenticated, async (req, res) => {
+    try {
+      const sessions = await storage.getAllSessionsWithDetails();
+      res.json(sessions);
+    } catch (error) {
+      console.error("Error fetching sessions:", error);
+      res.status(500).json({ message: "Failed to fetch sessions" });
+    }
+  });
+
+  // Admin puzzles list
+  app.get('/api/admin/puzzles', isAdminAuthenticated, async (req, res) => {
+    try {
+      const puzzles = await storage.getAllPuzzles();
+      res.json(puzzles);
+    } catch (error) {
+      console.error("Error fetching puzzles:", error);
+      res.status(500).json({ message: "Failed to fetch puzzles" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
