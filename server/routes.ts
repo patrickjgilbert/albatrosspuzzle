@@ -54,6 +54,65 @@ const ALBATROSS_PUZZLE_DATA = {
   aiPrompt: buildAlbatrossSystemPrompt(),
 };
 
+// ============================================================================
+// PRO PUZZLES DATA
+// ============================================================================
+
+const LIGHTHOUSE_KEEPER_PUZZLE_DATA = {
+  slug: "lighthouse-keeper",
+  title: "The Lighthouse Keeper",
+  description: "A lighthouse keeper is found dead at the top of the lighthouse with a broken lamp beside him. There are no signs of violence. Why did he die?",
+  prompt: "A lighthouse keeper is found dead at the top of the lighthouse with a broken lamp beside him. There are no signs of violence.",
+  isFree: false,
+  isActive: true,
+  difficulty: "medium",
+  aiPrompt: buildLighthouseKeeperSystemPrompt(),
+};
+
+const LAST_PHONE_CALL_PUZZLE_DATA = {
+  slug: "last-phone-call",
+  title: "The Last Phone Call",
+  description: "A woman receives a phone call, says 'thank you' with tears in her eyes, and immediately books a flight. Why?",
+  prompt: "A woman receives a phone call, says 'thank you' with tears in her eyes, and immediately books a flight.",
+  isFree: false,
+  isActive: true,
+  difficulty: "medium",
+  aiPrompt: buildLastPhoneCallSystemPrompt(),
+};
+
+const MIRROR_ROOM_PUZZLE_DATA = {
+  slug: "mirror-room",
+  title: "The Mirror Room",
+  description: "A man enters a room full of mirrors, looks around for exactly one minute, and leaves forever changed. What happened?",
+  prompt: "A man enters a room full of mirrors, looks around for exactly one minute, and leaves forever changed.",
+  isFree: false,
+  isActive: true,
+  difficulty: "hard",
+  aiPrompt: buildMirrorRoomSystemPrompt(),
+};
+
+const EMPTY_RESTAURANT_PUZZLE_DATA = {
+  slug: "empty-restaurant",
+  title: "The Empty Restaurant",
+  description: "A restaurant is completely empty with meals still warm on every table, but no one returns. Why not?",
+  prompt: "A restaurant is completely empty with meals still warm on every table, but no one returns.",
+  isFree: false,
+  isActive: true,
+  difficulty: "medium",
+  aiPrompt: buildEmptyRestaurantSystemPrompt(),
+};
+
+const SILENT_CONCERT_PUZZLE_DATA = {
+  slug: "silent-concert",
+  title: "The Silent Concert",
+  description: "Thousands of people attend a concert where no music is played, yet everyone is deeply moved. What concert is this?",
+  prompt: "Thousands of people attend a concert where no music is played, yet everyone is deeply moved.",
+  isFree: false,
+  isActive: true,
+  difficulty: "medium",
+  aiPrompt: buildSilentConcertSystemPrompt(),
+};
+
 function buildAlbatrossSystemPrompt(): string {
   const PUZZLE_BACKSTORY = `
 The man was on a ship or cruise ship with his wife and children. There was a shipwreck where they were stranded on a desert island. The man survived, but his family did not. With no options for food, the remaining survivors suggested cannibalism, but the man refused to participate, especially when it came to potentially eating the remains of his own family. But the man had skills and talents that made him useful to the rest of the survivors on the island, so they wanted to keep him alive. To convince him to eat the human remains, the other survivors lied to the man and said that the meat was albatross. And this was his primary source of food for many months that he had lived on this island before they were eventually rescued. Later, back in civilization, the man discovered a restaurant that served albatross. After trying the soup, he quickly realized that he had never tasted this before and then realized that he had been unknowingly participating in cannibalism while stranded on the island. He couldn't live with the guilt, so he immediately decided to take his own life.
@@ -132,6 +191,286 @@ A: {"answer": "YES", "explanation": "Yes, the survivors ate human flesh to survi
 REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
 }
 
+function buildLighthouseKeeperSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
+The keeper was responsible for maintaining the lighthouse. One stormy night, the lamp broke and went dark. A ship crashed on the rocks because there was no warning light. The keeper's son was aboard that ship and died. Overcome with guilt for his negligence in maintaining the lamp, the keeper took his own life.
+`;
+
+  return `You are a game master for the "Lighthouse Keeper" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+
+Here is the complete backstory:
+${PUZZLE_BACKSTORY}
+
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. LIGHTHOUSE_JOB: lighthouse keeper, keeper job, his job, worked at lighthouse, responsibility
+2. LAMP_BROKE: lamp broke, lamp broken, light broke, light failed, malfunction
+3. SHIP_CRASH: ship crash, ship wrecked, vessel crashed, hit rocks, accident at sea
+4. SON_DIED: son died, son dead, son killed, son on ship, son aboard
+5. GUILT: guilt, guilty, felt guilty, blamed himself, responsible for death
+6. NEGLIGENCE: negligence, negligent, failed duty, didn't maintain, poor maintenance
+7. RESPONSIBILITY: his responsibility, his duty, his fault, caused death
+8. SUICIDE: suicide, killed himself, took his life, ended his life
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
+Rules for answering:
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
+  "explanation": "Brief explanation (1-2 sentences max)",
+  "discoveryKey": null | discovery key from list above,
+  "discoveryLabel": null | "Natural language description"
+}
+
+Progressive Discovery System:
+
+BASE discoveries (award for general questions):
+- LIGHTHOUSE_JOB: "Was he a lighthouse keeper?" "Did he work at the lighthouse?"
+- LAMP_BROKE: "Did the lamp break?" "Did the light fail?"
+- GUILT: "Did he feel guilty?" "Did he blame himself?"
+- RESPONSIBILITY: "Was it his responsibility?" "Was it his fault?"
+
+EVOLVED discoveries (award for specific questions):
+- SHIP_CRASH: "Did a ship crash?" "Was there an accident?"
+- SON_DIED: "Did his son die?" "Was his son on the ship?"
+- NEGLIGENCE: "Was he negligent?" "Did he fail to maintain it?"
+- SUICIDE: "Did he kill himself?" "Did he commit suicide?"
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
+function buildLastPhoneCallSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
+Years ago, her daughter was kidnapped and never found. The woman has been searching ever since, never giving up hope. The phone call was from a detective who found her daughter alive in another country. She books an immediate flight to be reunited with her.
+`;
+
+  return `You are a game master for the "Last Phone Call" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+
+Here is the complete backstory:
+${PUZZLE_BACKSTORY}
+
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. DAUGHTER: daughter, her daughter, child, her child
+2. KIDNAPPED: kidnapped, kidnapping, abducted, taken, stolen
+3. YEARS_AGO: years ago, long time, many years, decades
+4. NEVER_FOUND: never found, missing, lost, couldn't find
+5. SEARCHING: searching, looking for, seeking, trying to find
+6. DETECTIVE_CALL: detective called, detective found, investigator, police called
+7. FOUND_ALIVE: found alive, still alive, survived, discovered alive
+8. REUNION: reunion, reunite, see her again, together again
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
+Rules for answering:
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
+  "explanation": "Brief explanation (1-2 sentences max)",
+  "discoveryKey": null | discovery key from list above,
+  "discoveryLabel": null | "Natural language description"
+}
+
+Progressive Discovery System:
+
+BASE discoveries (award for general questions):
+- DAUGHTER: "Does she have a daughter?" "Is it about her child?"
+- KIDNAPPED: "Was someone kidnapped?" "Was there an abduction?"
+- NEVER_FOUND: "Was someone missing?" "Was someone lost?"
+- SEARCHING: "Was she searching?" "Was she looking for someone?"
+
+EVOLVED discoveries (award for specific questions):
+- YEARS_AGO: "Did it happen years ago?" "Was it a long time ago?"
+- DETECTIVE_CALL: "Did a detective call?" "Did the police find something?"
+- FOUND_ALIVE: "Was someone found alive?" "Did they survive?"
+- REUNION: "Will they reunite?" "Will she see her again?"
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
+function buildMirrorRoomSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
+The man was a con artist who had been assuming different identities his whole life, always pretending to be someone he wasn't. The mirror room was actually a therapy installation designed to force confrontation with one's true self. For the first time in decades, he saw his real face - aged, unfamiliar, the person he abandoned. The experience was so profound that he decided to stop running and reclaim his true identity.
+`;
+
+  return `You are a game master for the "Mirror Room" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+
+Here is the complete backstory:
+${PUZZLE_BACKSTORY}
+
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. CON_ARTIST: con artist, criminal, fraud, scammer, deceiver
+2. FAKE_IDENTITIES: fake identities, false identity, assumed names, pretended to be
+3. PRETENDING: pretending, faking, lying about identity, hiding identity
+4. THERAPY_ROOM: therapy, therapeutic, designed for therapy, installation, treatment
+5. TRUE_SELF: true self, real self, actual self, who he really was
+6. REAL_FACE: real face, actual face, his own face, true appearance
+7. CONFRONTATION: confrontation, faced himself, forced to see, had to confront
+8. REDEMPTION: redemption, change, transformation, reclaim identity, stop running
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
+Rules for answering:
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
+  "explanation": "Brief explanation (1-2 sentences max)",
+  "discoveryKey": null | discovery key from list above,
+  "discoveryLabel": null | "Natural language description"
+}
+
+Progressive Discovery System:
+
+BASE discoveries (award for general questions):
+- CON_ARTIST: "Was he a criminal?" "Was he a con artist?"
+- FAKE_IDENTITIES: "Did he use fake identities?" "Did he pretend to be others?"
+- PRETENDING: "Was he pretending?" "Was he hiding who he was?"
+- TRUE_SELF: "Did he see his true self?" "Was it about his real identity?"
+
+EVOLVED discoveries (award for specific questions):
+- THERAPY_ROOM: "Was it therapy?" "Was the room designed for treatment?"
+- REAL_FACE: "Did he see his real face?" "Was it his actual appearance?"
+- CONFRONTATION: "Did he confront himself?" "Was he forced to face himself?"
+- REDEMPTION: "Did he change?" "Did he reclaim his identity?"
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
+function buildEmptyRestaurantSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
+The restaurant was located in a small town near a nuclear power plant. During dinner service, emergency sirens went off signaling an imminent reactor meltdown. Everyone evacuated immediately, leaving their meals behind. The town was permanently evacuated and the restaurant sits frozen in time as part of the exclusion zone.
+`;
+
+  return `You are a game master for the "Empty Restaurant" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+
+Here is the complete backstory:
+${PUZZLE_BACKSTORY}
+
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. NUCLEAR_PLANT: nuclear plant, power plant, reactor, nuclear facility
+2. EMERGENCY_SIRENS: emergency sirens, alarm, warning sirens, alert
+3. REACTOR_MELTDOWN: meltdown, reactor failure, nuclear accident, disaster
+4. EVACUATION: evacuation, evacuated, had to leave, forced to leave
+5. LEFT_IMMEDIATELY: left immediately, ran out, fled, escaped quickly
+6. TOWN_ABANDONED: town abandoned, ghost town, no one lives there, deserted
+7. EXCLUSION_ZONE: exclusion zone, restricted area, forbidden zone, quarantine
+8. FROZEN_TIME: frozen in time, preserved, unchanged, stuck in that moment
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
+Rules for answering:
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
+  "explanation": "Brief explanation (1-2 sentences max)",
+  "discoveryKey": null | discovery key from list above,
+  "discoveryLabel": null | "Natural language description"
+}
+
+Progressive Discovery System:
+
+BASE discoveries (award for general questions):
+- NUCLEAR_PLANT: "Was there a nuclear plant?" "Was there a power plant?"
+- EMERGENCY_SIRENS: "Were there sirens?" "Was there an emergency?"
+- EVACUATION: "Did they evacuate?" "Did they have to leave?"
+- LEFT_IMMEDIATELY: "Did they leave quickly?" "Did they run out?"
+
+EVOLVED discoveries (award for specific questions):
+- REACTOR_MELTDOWN: "Was there a meltdown?" "Was there a nuclear accident?"
+- TOWN_ABANDONED: "Is the town abandoned?" "Is it a ghost town?"
+- EXCLUSION_ZONE: "Is it an exclusion zone?" "Is the area restricted?"
+- FROZEN_TIME: "Is it frozen in time?" "Is it preserved from that day?"
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
+function buildSilentConcertSystemPrompt(): string {
+  const PUZZLE_BACKSTORY = `
+It was a memorial concert for a beloved musician who died tragically. Instead of performing their songs, the venue played complete silence for the same duration the concert would have lasted - a powerful tribute showing what the world lost. The silence itself became the performance, representing the absence left behind.
+`;
+
+  return `You are a game master for the "Silent Concert" lateral thinking puzzle. Your role is to answer yes/no questions from players trying to solve the mystery.
+
+Here is the complete backstory:
+${PUZZLE_BACKSTORY}
+
+INTENT MATCHING - Before answering, mentally check if the question matches ANY of these discovery patterns:
+
+1. MEMORIAL: memorial, memorial service, tribute event, remembrance
+2. MUSICIAN_DIED: musician died, artist died, performer died, singer died
+3. TRIBUTE: tribute, honor, honoring, paying respects
+4. SILENCE_PERFORMANCE: silence was performance, silence intentional, deliberate silence
+5. ABSENCE: absence, what's missing, what's gone, loss
+6. BELOVED_ARTIST: beloved, famous, popular, well-loved, cherished
+7. TRAGIC_DEATH: tragic death, died tragically, untimely death, sudden death
+8. POWERFUL_TRIBUTE: powerful tribute, moving tribute, meaningful gesture
+
+If the question matches a pattern and your answer is YES, you MUST include the discoveryKey and discoveryLabel.
+
+Rules for answering:
+1. If the player asks multiple questions at once, answer with "ONE_QUESTION_AT_A_TIME_PLEASE"
+2. Answer with ONLY "YES", "NO", or "DOES_NOT_MATTER" (use underscores, all caps)
+3. Answer "YES" if the question's implication is true according to the backstory
+4. Answer "NO" if the question's implication is false according to the backstory
+5. Answer "DOES_NOT_MATTER" ONLY if the detail is completely irrelevant to the puzzle
+6. **CRITICAL**: If you answer YES and the question matches ANY discovery pattern above, you MUST set discoveryKey and discoveryLabel
+
+Respond ONLY with valid JSON in this exact format:
+{
+  "answer": "YES" | "NO" | "DOES_NOT_MATTER" | "ONE_QUESTION_AT_A_TIME_PLEASE",
+  "explanation": "Brief explanation (1-2 sentences max)",
+  "discoveryKey": null | discovery key from list above,
+  "discoveryLabel": null | "Natural language description"
+}
+
+Progressive Discovery System:
+
+BASE discoveries (award for general questions):
+- MEMORIAL: "Was it a memorial?" "Was it a tribute?"
+- MUSICIAN_DIED: "Did a musician die?" "Did an artist die?"
+- TRIBUTE: "Was it honoring someone?" "Was it paying respects?"
+- BELOVED_ARTIST: "Was the artist beloved?" "Were they famous?"
+
+EVOLVED discoveries (award for specific questions):
+- TRAGIC_DEATH: "Did they die tragically?" "Was it an untimely death?"
+- SILENCE_PERFORMANCE: "Was the silence intentional?" "Was silence the performance?"
+- ABSENCE: "Was it about absence?" "About what's missing?"
+- POWERFUL_TRIBUTE: "Was it a powerful tribute?" "Was it meaningful?"
+
+REMEMBER: If you answer YES and the question is about any discovery topic, you MUST include discoveryKey and discoveryLabel!`;
+}
+
 // ============================================================================
 // OPENAI RESPONSE VALIDATION
 // ============================================================================
@@ -153,7 +492,45 @@ const OpenAIResponseSchema = z.object({
     "RESTAURANT",
     "ALBATROSS_REVEAL",
     "GUILT",
-    "SUICIDE"
+    "SUICIDE",
+    "LIGHTHOUSE_JOB",
+    "LAMP_BROKE",
+    "SHIP_CRASH",
+    "SON_DIED",
+    "NEGLIGENCE",
+    "RESPONSIBILITY",
+    "DAUGHTER",
+    "KIDNAPPED",
+    "YEARS_AGO",
+    "NEVER_FOUND",
+    "SEARCHING",
+    "DETECTIVE_CALL",
+    "FOUND_ALIVE",
+    "REUNION",
+    "CON_ARTIST",
+    "FAKE_IDENTITIES",
+    "PRETENDING",
+    "THERAPY_ROOM",
+    "TRUE_SELF",
+    "REAL_FACE",
+    "CONFRONTATION",
+    "REDEMPTION",
+    "NUCLEAR_PLANT",
+    "EMERGENCY_SIRENS",
+    "REACTOR_MELTDOWN",
+    "EVACUATION",
+    "LEFT_IMMEDIATELY",
+    "TOWN_ABANDONED",
+    "EXCLUSION_ZONE",
+    "FROZEN_TIME",
+    "MEMORIAL",
+    "MUSICIAN_DIED",
+    "TRIBUTE",
+    "SILENCE_PERFORMANCE",
+    "ABSENCE",
+    "BELOVED_ARTIST",
+    "TRAGIC_DEATH",
+    "POWERFUL_TRIBUTE"
   ]).nullish(),
   discoveryLabel: z.string().nullish(),
 });
@@ -187,6 +564,26 @@ async function ensureAlbatrossPuzzle(): Promise<Puzzle> {
   }
   
   return puzzle;
+}
+
+async function seedProPuzzles(): Promise<void> {
+  const proPuzzles = [
+    LIGHTHOUSE_KEEPER_PUZZLE_DATA,
+    LAST_PHONE_CALL_PUZZLE_DATA,
+    MIRROR_ROOM_PUZZLE_DATA,
+    EMPTY_RESTAURANT_PUZZLE_DATA,
+    SILENT_CONCERT_PUZZLE_DATA,
+  ];
+  
+  for (const puzzleData of proPuzzles) {
+    let puzzle = await storage.getPuzzleBySlug(puzzleData.slug);
+    
+    if (!puzzle) {
+      console.log(`🧩 Seeding Pro puzzle: ${puzzleData.title}...`);
+      puzzle = await storage.createPuzzle(puzzleData);
+      console.log(`✅ ${puzzleData.title} created with ID: ${puzzle.id}`);
+    }
+  }
 }
 
 // Helper to resolve puzzle by slug or ID
@@ -250,6 +647,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Seed Albatross puzzle
   await ensureAlbatrossPuzzle();
+  
+  // Seed Pro puzzles
+  await seedProPuzzles();
 
   // ============================================================================
   // AUTH ROUTES
@@ -552,6 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (answer === "YES" && !discoveryKey) {
         const questionLower = question.toLowerCase();
         
+        // ALBATROSS PUZZLE PATTERNS
         // Check for rescue keywords
         if (/rescu(ed|e)|saved|found|picked up|escape|got off|made it back/i.test(questionLower)) {
           discoveryKey = "RESCUED";
@@ -586,6 +987,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
         else if (/family.*die|family.*dead|family.*killed|family.*perish/i.test(questionLower)) {
           discoveryKey = "FAMILY_DIED";
           discoveryLabel = "His family died";
+        }
+        
+        // LIGHTHOUSE KEEPER PATTERNS
+        else if (/lighthouse.*keeper|keeper.*job|worked.*lighthouse/i.test(questionLower)) {
+          discoveryKey = "LIGHTHOUSE_JOB";
+          discoveryLabel = "He was the lighthouse keeper";
+        }
+        else if (/lamp.*broke|lamp.*broken|light.*broke|light.*failed|malfunction/i.test(questionLower)) {
+          discoveryKey = "LAMP_BROKE";
+          discoveryLabel = "The lamp broke";
+        }
+        else if (/ship.*crash|ship.*wreck|vessel.*crash|hit.*rocks|accident.*sea/i.test(questionLower)) {
+          discoveryKey = "SHIP_CRASH";
+          discoveryLabel = "A ship crashed on the rocks";
+        }
+        else if (/son.*died|son.*dead|son.*killed|son.*ship|son.*aboard/i.test(questionLower)) {
+          discoveryKey = "SON_DIED";
+          discoveryLabel = "His son died in the accident";
+        }
+        else if (/negligence|negligent|failed.*duty|didn'?t maintain|poor maintenance/i.test(questionLower)) {
+          discoveryKey = "NEGLIGENCE";
+          discoveryLabel = "He was negligent in his duties";
+        }
+        else if (/his.*responsibility|his.*duty|his.*fault|caused.*death/i.test(questionLower)) {
+          discoveryKey = "RESPONSIBILITY";
+          discoveryLabel = "It was his responsibility";
+        }
+        
+        // LAST PHONE CALL PATTERNS
+        else if (/daughter|her.*daughter|child|her.*child/i.test(questionLower)) {
+          discoveryKey = "DAUGHTER";
+          discoveryLabel = "It was about her daughter";
+        }
+        else if (/kidnapped|kidnapping|abducted|taken|stolen/i.test(questionLower)) {
+          discoveryKey = "KIDNAPPED";
+          discoveryLabel = "Someone was kidnapped";
+        }
+        else if (/years.*ago|long.*time|many.*years|decades/i.test(questionLower)) {
+          discoveryKey = "YEARS_AGO";
+          discoveryLabel = "It happened years ago";
+        }
+        else if (/never.*found|missing|lost|couldn'?t find/i.test(questionLower)) {
+          discoveryKey = "NEVER_FOUND";
+          discoveryLabel = "She was never found";
+        }
+        else if (/searching|looking.*for|seeking|trying.*find/i.test(questionLower)) {
+          discoveryKey = "SEARCHING";
+          discoveryLabel = "She had been searching";
+        }
+        else if (/detective.*call|detective.*found|investigator|police.*called/i.test(questionLower)) {
+          discoveryKey = "DETECTIVE_CALL";
+          discoveryLabel = "A detective called with news";
+        }
+        else if (/found.*alive|still.*alive|survived|discovered.*alive/i.test(questionLower)) {
+          discoveryKey = "FOUND_ALIVE";
+          discoveryLabel = "She was found alive";
+        }
+        else if (/reunion|reunite|see.*again|together.*again/i.test(questionLower)) {
+          discoveryKey = "REUNION";
+          discoveryLabel = "They would reunite";
+        }
+        
+        // MIRROR ROOM PATTERNS
+        else if (/con.*artist|criminal|fraud|scammer|deceiver/i.test(questionLower)) {
+          discoveryKey = "CON_ARTIST";
+          discoveryLabel = "He was a con artist";
+        }
+        else if (/fake.*identit|false.*identity|assumed.*names|pretended.*to.*be/i.test(questionLower)) {
+          discoveryKey = "FAKE_IDENTITIES";
+          discoveryLabel = "He used fake identities";
+        }
+        else if (/pretending|faking|lying.*identity|hiding.*identity/i.test(questionLower)) {
+          discoveryKey = "PRETENDING";
+          discoveryLabel = "He was pretending to be someone else";
+        }
+        else if (/therapy|therapeutic|designed.*therapy|installation|treatment/i.test(questionLower)) {
+          discoveryKey = "THERAPY_ROOM";
+          discoveryLabel = "It was a therapy installation";
+        }
+        else if (/true.*self|real.*self|actual.*self|who.*really.*was/i.test(questionLower)) {
+          discoveryKey = "TRUE_SELF";
+          discoveryLabel = "He saw his true self";
+        }
+        else if (/real.*face|actual.*face|own.*face|true.*appearance/i.test(questionLower)) {
+          discoveryKey = "REAL_FACE";
+          discoveryLabel = "He saw his real face";
+        }
+        else if (/confrontation|faced.*himself|forced.*see|had.*confront/i.test(questionLower)) {
+          discoveryKey = "CONFRONTATION";
+          discoveryLabel = "He confronted himself";
+        }
+        else if (/redemption|change|transformation|reclaim.*identity|stop.*running/i.test(questionLower)) {
+          discoveryKey = "REDEMPTION";
+          discoveryLabel = "He chose redemption";
+        }
+        
+        // EMPTY RESTAURANT PATTERNS
+        else if (/nuclear.*plant|power.*plant|reactor|nuclear.*facility/i.test(questionLower)) {
+          discoveryKey = "NUCLEAR_PLANT";
+          discoveryLabel = "There was a nuclear plant nearby";
+        }
+        else if (/emergency.*siren|alarm|warning.*siren|alert/i.test(questionLower)) {
+          discoveryKey = "EMERGENCY_SIRENS";
+          discoveryLabel = "Emergency sirens went off";
+        }
+        else if (/meltdown|reactor.*failure|nuclear.*accident|disaster/i.test(questionLower)) {
+          discoveryKey = "REACTOR_MELTDOWN";
+          discoveryLabel = "There was a reactor meltdown";
+        }
+        else if (/evacuation|evacuated|had.*leave|forced.*leave/i.test(questionLower)) {
+          discoveryKey = "EVACUATION";
+          discoveryLabel = "Everyone was evacuated";
+        }
+        else if (/left.*immediately|ran.*out|fled|escaped.*quickly/i.test(questionLower)) {
+          discoveryKey = "LEFT_IMMEDIATELY";
+          discoveryLabel = "They left immediately";
+        }
+        else if (/town.*abandoned|ghost.*town|no.*one.*lives|deserted/i.test(questionLower)) {
+          discoveryKey = "TOWN_ABANDONED";
+          discoveryLabel = "The town was abandoned";
+        }
+        else if (/exclusion.*zone|restricted.*area|forbidden.*zone|quarantine/i.test(questionLower)) {
+          discoveryKey = "EXCLUSION_ZONE";
+          discoveryLabel = "It's now an exclusion zone";
+        }
+        else if (/frozen.*time|preserved|unchanged|stuck.*moment/i.test(questionLower)) {
+          discoveryKey = "FROZEN_TIME";
+          discoveryLabel = "It's frozen in time";
+        }
+        
+        // SILENT CONCERT PATTERNS
+        else if (/memorial|memorial.*service|tribute.*event|remembrance/i.test(questionLower)) {
+          discoveryKey = "MEMORIAL";
+          discoveryLabel = "It was a memorial";
+        }
+        else if (/musician.*died|artist.*died|performer.*died|singer.*died/i.test(questionLower)) {
+          discoveryKey = "MUSICIAN_DIED";
+          discoveryLabel = "A musician had died";
+        }
+        else if (/tribute|honor|honoring|paying.*respects/i.test(questionLower)) {
+          discoveryKey = "TRIBUTE";
+          discoveryLabel = "It was a tribute";
+        }
+        else if (/silence.*performance|silence.*intentional|deliberate.*silence/i.test(questionLower)) {
+          discoveryKey = "SILENCE_PERFORMANCE";
+          discoveryLabel = "The silence was the performance";
+        }
+        else if (/absence|what'?s.*missing|what'?s.*gone|loss/i.test(questionLower)) {
+          discoveryKey = "ABSENCE";
+          discoveryLabel = "It represented absence";
+        }
+        else if (/beloved|famous|popular|well-loved|cherished/i.test(questionLower)) {
+          discoveryKey = "BELOVED_ARTIST";
+          discoveryLabel = "The artist was beloved";
+        }
+        else if (/tragic.*death|died.*tragically|untimely.*death|sudden.*death/i.test(questionLower)) {
+          discoveryKey = "TRAGIC_DEATH";
+          discoveryLabel = "The death was tragic";
+        }
+        else if (/powerful.*tribute|moving.*tribute|meaningful.*gesture/i.test(questionLower)) {
+          discoveryKey = "POWERFUL_TRIBUTE";
+          discoveryLabel = "It was a powerful tribute";
         }
       }
 

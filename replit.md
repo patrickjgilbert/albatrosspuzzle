@@ -6,7 +6,19 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**SaaS Transformation Complete (Latest - November 13, 2025)**
+**Admin Panel & Pro Puzzles (November 15, 2025)**
+- Created secure admin panel at /admin with environment-based credentials (ADMIN_USERNAME, ADMIN_PASSWORD)
+- Implemented session regeneration on login to prevent session fixation attacks
+- Full session destruction on logout with cookie clearing for secure logout
+- Admin dashboard shows: total users, pro users, guest sessions, game sessions stats
+- Admin views: Users table, Sessions table (with discoveries/progress), Puzzles catalog with AI prompts
+- Implemented username/password authentication with bcrypt hashing (separate from Google OAuth)
+- Guest session system allows anonymous play of free puzzles with cookie-based tracking
+- Created 5 new Pro-only lateral thinking puzzles: Lighthouse Keeper, Last Phone Call, Mirror Room, Empty Restaurant, Silent Concert
+- All puzzles follow same discovery-based progression with 8 canonical keys and 3 critical topics
+- Pro puzzles require $1 lifetime purchase to access
+
+**SaaS Transformation Complete (November 13, 2025)**
 - Transformed from demo app to full SaaS platform with PostgreSQL database, authentication, and subscriptions
 - Integrated Replit Auth supporting Google login and email/password authentication
 - All gameplay data now persisted to database: users, puzzles, game sessions, discoveries, messages
