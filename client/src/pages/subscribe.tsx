@@ -41,9 +41,32 @@ const SubscribeForm = () => {
     setIsProcessing(false);
 
     if (error) {
+      let errorTitle = "Payment Failed";
+      let errorDescription = error.message || "An error occurred during payment";
+
+      // Provide specific error messages based on error type
+      if (error.type === "card_error") {
+        errorTitle = "Card Declined";
+        if (error.code === "card_declined") {
+          errorDescription = "Your card was declined. Please try a different payment method.";
+        } else if (error.code === "insufficient_funds") {
+          errorDescription = "Insufficient funds. Please use a different card.";
+        } else if (error.code === "incorrect_cvc") {
+          errorDescription = "Incorrect CVC code. Please check and try again.";
+        } else if (error.code === "expired_card") {
+          errorDescription = "Your card has expired. Please use a different card.";
+        }
+      } else if (error.type === "validation_error") {
+        errorTitle = "Invalid Payment Details";
+        errorDescription = "Please check your payment information and try again.";
+      } else if (error.type === "api_connection_error") {
+        errorTitle = "Network Error";
+        errorDescription = "Unable to connect to payment processor. Please check your internet connection.";
+      }
+
       toast({
-        title: "Payment Failed",
-        description: error.message,
+        title: errorTitle,
+        description: errorDescription,
         variant: "destructive",
       });
     }
