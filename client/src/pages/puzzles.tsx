@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Play, Trophy } from "lucide-react";
+import { AppLogo } from "@/components/AppLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface Puzzle {
   id: string;
@@ -39,21 +41,28 @@ export default function PuzzlesPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold" data-testid="text-page-title">Lateral Thinking Puzzles</h1>
-              <p className="text-muted-foreground mt-1">
-                Solve mysterious scenarios through yes/no questions
-              </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1">
+              <AppLogo />
+              <div className="h-6 w-px bg-border" />
+              <div>
+                <h1 className="text-3xl font-bold" data-testid="text-page-title">Lateral Thinking Puzzles</h1>
+                <p className="text-muted-foreground mt-1">
+                  Solve mysterious scenarios through yes/no questions
+                </p>
+              </div>
             </div>
-            {isAuthenticated && (
-              <Link href="/leaderboard">
-                <Button variant="outline" data-testid="button-leaderboard">
-                  <Trophy className="h-4 w-4 mr-2" />
-                  Leaderboard
-                </Button>
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              {isAuthenticated && (
+                <Link href="/leaderboard">
+                  <Button variant="outline" data-testid="button-leaderboard">
+                    <Trophy className="h-4 w-4 mr-2" />
+                    Leaderboard
+                  </Button>
+                </Link>
+              )}
+              <ThemeToggle />
+            </div>
           </div>
         </div>
       </div>

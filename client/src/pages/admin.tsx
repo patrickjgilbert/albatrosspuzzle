@@ -11,6 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { Lock, Users, Gamepad2, FileText, LogOut } from "lucide-react";
+import { AppLogo } from "@/components/AppLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface AdminStats {
   totalUsers: number;
@@ -195,14 +197,21 @@ export default function AdminPage() {
     <div className="min-h-screen bg-background">
       <div className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Lock className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <div className="flex items-center gap-4">
+            <AppLogo />
+            <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <Lock className="h-6 w-6 text-primary" />
+              <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+            </div>
           </div>
-          <Button variant="outline" onClick={handleLogout} data-testid="button-admin-logout">
-            <LogOut className="h-4 w-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={handleLogout} data-testid="button-admin-logout">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
 

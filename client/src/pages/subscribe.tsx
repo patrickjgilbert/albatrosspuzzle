@@ -3,10 +3,13 @@ import { loadStripe } from '@stripe/stripe-js';
 import { useEffect, useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, ArrowLeft } from "lucide-react";
+import { Check, CreditCard } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
+import { AppLogo } from "@/components/AppLogo";
+import ThemeToggle from "@/components/ThemeToggle";
 
 if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
   throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
@@ -141,12 +144,10 @@ export default function Subscribe() {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
-          <div className="container mx-auto px-4 py-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </Button>
+          <div className="container mx-auto px-4 py-4 flex items-center gap-4">
+            <AppLogo />
+            <div className="h-6 w-px bg-border" />
+            <h1 className="text-xl font-semibold">Loading...</h1>
           </div>
         </header>
         <div className="h-screen flex items-center justify-center">
@@ -161,13 +162,13 @@ export default function Subscribe() {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
-          <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </Button>
-            <h1 className="text-xl font-semibold">Already Pro</h1>
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <AppLogo />
+              <div className="h-6 w-px bg-border" />
+              <h1 className="text-xl font-semibold">Already Pro</h1>
+            </div>
+            <ThemeToggle />
           </div>
         </header>
         <div className="container mx-auto px-4 py-12 max-w-2xl">
@@ -194,13 +195,13 @@ export default function Subscribe() {
     return (
       <div className="min-h-screen bg-background">
         <header className="border-b">
-          <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/">
-                <ArrowLeft className="w-5 h-5" />
-              </Link>
-            </Button>
-            <h1 className="text-xl font-semibold">Payment Error</h1>
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <AppLogo />
+              <div className="h-6 w-px bg-border" />
+              <h1 className="text-xl font-semibold">Payment Error</h1>
+            </div>
+            <ThemeToggle />
           </div>
         </header>
         <div className="container mx-auto px-4 py-12 max-w-2xl">
@@ -235,16 +236,26 @@ export default function Subscribe() {
     return null; // Should never reach here due to guards above, but TypeScript safety
   }
 
+  // Detect test mode
+  const isTestMode = import.meta.env.VITE_STRIPE_PUBLIC_KEY?.includes('pk_test');
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b">
-        <div className="container mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild data-testid="button-back">
-            <Link href="/">
-              <ArrowLeft className="w-5 h-5" />
-            </Link>
-          </Button>
-          <h1 className="text-xl font-semibold">Upgrade to Pro</h1>
+        <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <AppLogo />
+            <div className="h-6 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl font-semibold">Upgrade to Pro</h1>
+              {isTestMode && (
+                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30">
+                  Test Mode
+                </Badge>
+              )}
+            </div>
+          </div>
+          <ThemeToggle />
         </div>
       </header>
 
@@ -301,12 +312,28 @@ export default function Subscribe() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Payment Details</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="w-5 h-5" />
+              Payment Details
+            </CardTitle>
             <CardDescription>
               Secure one-time payment powered by Stripe. Get lifetime Pro access instantly.
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
+            {isTestMode && (
+              <div className="p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/30 space-y-2">
+                <p className="text-sm font-semibold text-yellow-700 dark:text-yellow-400">
+                  Test Mode - Use Test Card
+                </p>
+                <p className="text-sm text-yellow-600 dark:text-yellow-500 font-mono">
+                  Card: 4242 4242 4242 4242
+                </p>
+                <p className="text-xs text-yellow-600 dark:text-yellow-500">
+                  Expiry: Any future date • CVC: Any 3 digits • ZIP: Any 5 digits
+                </p>
+              </div>
+            )}
             <Elements stripe={stripePromise} options={{ clientSecret }}>
               <SubscribeForm />
             </Elements>

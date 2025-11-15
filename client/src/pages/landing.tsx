@@ -1,5 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AppLogo } from "@/components/AppLogo";
+import ThemeToggle from "@/components/ThemeToggle";
+import { Link } from "wouter";
+import { Play } from "lucide-react";
 
 export default function Landing() {
   return (
@@ -7,10 +11,13 @@ export default function Landing() {
       {/* Header */}
       <header className="container mx-auto px-4 py-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">The Albatross Puzzle</h1>
-          <Button asChild data-testid="button-login">
-            <a href="/api/login">Log In</a>
-          </Button>
+          <AppLogo />
+          <div className="flex items-center gap-2">
+            <Button asChild data-testid="button-login">
+              <a href="/api/login">Log In</a>
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -28,11 +35,14 @@ export default function Landing() {
 
           {/* CTA */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" asChild data-testid="button-get-started">
-              <a href="/api/login">Get Started - It's Free</a>
+            <Button size="lg" asChild data-testid="button-play-free">
+              <Link href="/game/albatross">
+                <Play className="w-5 h-5 mr-2" />
+                Play Albatross Free
+              </Link>
             </Button>
-            <Button size="lg" variant="outline" asChild>
-              <a href="#how-it-works">How It Works</a>
+            <Button size="lg" variant="outline" asChild data-testid="button-get-started">
+              <a href="/api/login">Sign Up & Save Progress</a>
             </Button>
           </div>
 
@@ -72,15 +82,18 @@ export default function Landing() {
               <CardHeader>
                 <CardTitle>Free to Start</CardTitle>
                 <CardDescription>
-                  Play the Albatross puzzle for free. Upgrade to Pro for $1/month to access unlimited puzzles.
+                  Play the Albatross puzzle for free. Upgrade to Pro for just $1 (one-time payment) to access 5 additional lateral thinking puzzles.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button className="w-full" size="lg" asChild>
-                  <a href="/api/login">Start Solving</a>
+                  <Link href="/game/albatross">
+                    <Play className="w-5 h-5 mr-2" />
+                    Start Playing Now
+                  </Link>
                 </Button>
                 <Button variant="outline" className="w-full" size="lg" asChild>
-                  <a href="/leaderboard">View Leaderboard</a>
+                  <Link href="/leaderboard">View Leaderboard</Link>
                 </Button>
               </CardContent>
             </Card>

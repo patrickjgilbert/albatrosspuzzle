@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown, AlertCircle, Home } from "lucide-react";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown, AlertCircle } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import PuzzleStatement from "@/components/PuzzleStatement";
@@ -11,6 +11,7 @@ import GameCompletionModal from "@/components/GameCompletionModal";
 import AccountPromptModal from "@/components/AccountPromptModal";
 import ThemeToggle from "@/components/ThemeToggle";
 import { DetectiveBoard } from "@/components/DetectiveBoard";
+import { AppLogo } from "@/components/AppLogo";
 import { useToast } from "@/hooks/use-toast";
 import {
   Popover,
@@ -157,8 +158,8 @@ export default function Game() {
       if (data.discovery) {
         setDiscoveries(data.discoveries);
         
-        // Show account prompt after first YES response for guests
-        if (!isAuthenticated && data.response === "YES" && !hasShownFirstDiscoveryPrompt.current) {
+        // Show account prompt after first discovery (post-it note appears) for guests
+        if (!isAuthenticated && data.discoveries.length > 0 && !hasShownFirstDiscoveryPrompt.current) {
           hasShownFirstDiscoveryPrompt.current = true;
           setTimeout(() => {
             setAccountPromptTrigger("first_discovery");
@@ -304,6 +305,8 @@ export default function Game() {
     <div className="flex flex-col h-screen bg-background">
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-4">
+          <AppLogo />
+          <div className="h-6 w-px bg-border" />
           <h1 className="text-lg font-semibold" data-testid="text-title">
             {puzzle.title}
           </h1>
@@ -314,16 +317,6 @@ export default function Game() {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            data-testid="button-home"
-          >
-            <Link href="/puzzles">
-              <Home className="w-5 h-5" />
-            </Link>
-          </Button>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" data-testid="button-help">
