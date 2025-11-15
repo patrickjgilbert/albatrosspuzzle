@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown, AlertCircle } from "lucide-react";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown, AlertCircle, Home } from "lucide-react";
 import { Link, useRoute } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import PuzzleStatement from "@/components/PuzzleStatement";
@@ -287,6 +287,16 @@ export default function Game() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            asChild
+            data-testid="button-home"
+          >
+            <Link href="/puzzles">
+              <Home className="w-5 h-5" />
+            </Link>
+          </Button>
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" data-testid="button-help">
