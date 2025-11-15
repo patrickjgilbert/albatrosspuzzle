@@ -1,4 +1,4 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./replitAuth";
@@ -20,6 +20,7 @@ import Stripe from "stripe";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import type { User } from "@shared/schema";
+import { v4 as uuidv4 } from "uuid";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -219,6 +220,27 @@ function buildConversationHistory(messages: GameMessage[]): Array<{role: "user" 
 }
 
 // ============================================================================
+// MIDDLEWARE
+// ============================================================================
+
+function getOrCreateGuestId(req: any, res: Response, next: NextFunction) {
+  let guestId = req.cookies?.guestId;
+  
+  if (!guestId) {
+    guestId = uuidv4();
+    res.cookie('guestId', guestId, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax'
+    });
+  }
+  
+  req.guestId = guestId;
+  next();
+}
+
+// ============================================================================
 // ROUTES
 // ============================================================================
 
@@ -371,19 +393,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GAME SESSION ROUTES
   // ============================================================================
   
-  app.get('/api/session/:puzzleId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/session/:puzzleId', getOrCreateGuestId, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
       const { puzzleId: slugOrId } = req.params;
       
       // Resolve puzzle from slug or ID
       const puzzle = await resolvePuzzle(slugOrId);
       
-      // Get or create game session using the actual puzzle ID
-      let session = await storage.getUserGameSession(userId, puzzle.id);
+      const isAuthenticated = !!req.user;
+      const isGuest = !isAuthenticated;
       
-      if (!session) {
-        session = await storage.createGameSession(userId, puzzle.id);
+      if (isGuest && !puzzle.isFree) {
+        return res.status(403).json({
+          message: "This puzzle requires a Pro subscription. Please sign in or subscribe."
+        });
+      }
+      
+      let session;
+      
+      if (isAuthenticated) {
+        const userId = req.user.claims.sub;
+        let userSession = await storage.getUserGameSession(userId, puzzle.id);
+        
+        if (!userSession) {
+          userSession = await storage.createGameSession(userId, puzzle.id);
+        }
+        
+        session = userSession;
+      } else {
+        const guestId = req.guestId;
+        let guestSession = await storage.getGuestSessionByGuestAndPuzzle(guestId, puzzle.id);
+        
+        if (!guestSession) {
+          guestSession = await storage.createGuestSession(guestId, puzzle.id);
+        }
+        
+        session = guestSession;
       }
       
       res.json(session);
@@ -397,9 +442,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // GAMEPLAY ROUTES
   // ============================================================================
   
-  app.post("/api/ask", isAuthenticated, async (req: any, res) => {
+  app.post("/api/ask", getOrCreateGuestId, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
       const validation = askQuestionSchema.safeParse(req.body);
       
       if (!validation.success) {
@@ -413,16 +457,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Resolve puzzle from slug or ID
       const puzzle = await resolvePuzzle(puzzleId);
+      
+      // Check authentication and puzzle access
+      const isAuthenticated = !!req.user;
+      const isGuest = !isAuthenticated;
+      
+      if (isGuest && !puzzle.isFree) {
+        return res.status(403).json({
+          error: "Authentication required",
+          message: "This puzzle requires a Pro subscription. Please sign in or subscribe."
+        });
+      }
 
-      // Get or create game session
-      let session = await storage.getUserGameSession(userId, puzzle.id);
-      if (!session) {
-        session = await storage.createGameSession(userId, puzzle.id);
+      // Get or create session based on user type
+      let session;
+      let sessionMessages;
+      let sessionDiscoveries;
+      let sessionDiscoveredKeys;
+      let sessionId;
+      
+      if (isAuthenticated) {
+        const userId = req.user.claims.sub;
+        let userSession = await storage.getUserGameSession(userId, puzzle.id);
+        if (!userSession) {
+          userSession = await storage.createGameSession(userId, puzzle.id);
+        }
+        session = userSession;
+        sessionMessages = session.messages as GameMessage[];
+        sessionDiscoveries = session.discoveries as any[];
+        sessionDiscoveredKeys = session.discoveredKeys as DiscoveryKey[];
+        sessionId = session.id;
+      } else {
+        const guestId = req.guestId;
+        let guestSession = await storage.getGuestSessionByGuestAndPuzzle(guestId, puzzle.id);
+        if (!guestSession) {
+          guestSession = await storage.createGuestSession(guestId, puzzle.id);
+        }
+        session = guestSession;
+        sessionMessages = session.messages as GameMessage[];
+        sessionDiscoveries = session.discoveries as any[];
+        sessionDiscoveredKeys = session.discoveredKeys as DiscoveryKey[];
+        sessionId = session.id;
       }
 
       // Build conversation history from stored messages
-      const messages = session.messages as GameMessage[];
-      const conversationHistory = buildConversationHistory(messages);
+      const conversationHistory = buildConversationHistory(sessionMessages);
 
       // Call OpenAI with puzzle-specific prompt
       const completion = await openai.chat.completions.create({
@@ -511,23 +590,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const playerMessage: GameMessage = {
-        id: messages.length,
+        id: sessionMessages.length,
         type: "player",
         content: question,
         timestamp: Date.now(),
       };
 
       const systemMessage: GameMessage = {
-        id: messages.length + 1,
+        id: sessionMessages.length + 1,
         type: "system",
         content: explanation,
         response: answer,
         timestamp: Date.now(),
       };
 
-      const updatedMessages = [...messages, playerMessage, systemMessage];
-      const discoveries = session.discoveries as Discovery[];
-      const discoveredKeys = session.discoveredKeys as DiscoveryKey[];
+      const updatedMessages = [...sessionMessages, playerMessage, systemMessage];
+      const discoveries = sessionDiscoveries as Discovery[];
+      const discoveredKeys = sessionDiscoveredKeys;
 
       let newDiscovery: Discovery | undefined;
       if (discoveryKey && discoveryLabel) {
@@ -576,17 +655,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const questionCount = Math.floor(updatedMessages.length / 2);
 
-      // Update session in database
-      if (isComplete) {
-        await storage.completeGameSession(session.id, questionCount);
+      // Update session in database based on user type
+      if (isAuthenticated) {
+        if (isComplete) {
+          await storage.completeGameSession(sessionId, questionCount);
+        } else {
+          await storage.updateGameSession(
+            sessionId,
+            updatedMessages,
+            discoveries,
+            discoveredKeys,
+            questionCount
+          );
+        }
       } else {
-        await storage.updateGameSession(
-          session.id,
-          updatedMessages,
-          discoveries,
-          discoveredKeys,
-          questionCount
-        );
+        if (isComplete) {
+          await storage.completeGuestSession(sessionId, questionCount);
+        } else {
+          await storage.updateGuestSession(
+            sessionId,
+            updatedMessages,
+            discoveries,
+            discoveredKeys,
+            questionCount
+          );
+        }
       }
 
       const response: AskQuestionResponse = {
