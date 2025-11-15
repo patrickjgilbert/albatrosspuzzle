@@ -560,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ============================================================================
-  // STRIPE SUBSCRIPTION ROUTES
+  // STRIPE ONE-TIME PAYMENT ROUTES (Lifetime Pro Access)
   // ============================================================================
   
   app.post('/api/create-subscription', isAuthenticated, async (req: any, res) => {
@@ -572,21 +572,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "User not found" });
       }
 
-      // Check if user already has an active subscription
-      if (user.stripeSubscriptionId) {
-        const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
-          expand: ['latest_invoice.payment_intent'],
+      // Check if user is already Pro
+      if (user.isPro) {
+        return res.json({
+          message: "User already has Pro access",
+          clientSecret: null,
         });
-        
-        if (subscription.status === 'active' || subscription.status === 'trialing') {
-          const invoice = subscription.latest_invoice as any;
-          const paymentIntent = invoice?.payment_intent as any;
-          
-          return res.json({
-            subscriptionId: subscription.id,
-            clientSecret: paymentIntent?.client_secret || null,
-          });
-        }
       }
       
       // Create or retrieve Stripe customer
@@ -602,61 +593,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateUserStripeInfo(userId, customerId, '');
       }
 
-      // Create subscription ($1/month = 100 cents)
-      // Using the product ID from Stripe: prod_TQZ8Ei9K6Y46XJ
-      const subscription = await stripe.subscriptions.create({
+      // Create one-time payment intent ($1.00 for lifetime Pro access)
+      // Using Price ID: price_1SThzsLCLO3DdTe4UNIU6kg0
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: 100, // $1.00 in cents
+        currency: 'usd',
         customer: customerId,
-        items: [{
-          price_data: {
-            currency: 'usd',
-            product: 'prod_TQZ8Ei9K6Y46XJ', // Your Stripe Product ID
-            recurring: {
-              interval: 'month',
-            },
-            unit_amount: 100, // $1.00 in cents
-          },
-        }],
-        payment_behavior: 'default_incomplete',
-        payment_settings: { save_default_payment_method: 'on_subscription' },
-        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          userId: user.id,
+          priceId: 'price_1SThzsLCLO3DdTe4UNIU6kg0',
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
       });
-
-      // Save subscription ID
-      await storage.updateUserStripeInfo(userId, customerId, subscription.id);
-  
-      const invoice = subscription.latest_invoice as any;
-      const paymentIntent = invoice?.payment_intent as any;
       
       res.json({
-        subscriptionId: subscription.id,
-        clientSecret: paymentIntent?.client_secret || null,
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
       });
     } catch (error: any) {
-      console.error("Error creating subscription:", error);
+      console.error("Error creating payment:", error);
       res.status(500).json({ error: error.message });
     }
   });
   
+  // Note: No cancellation needed for one-time payments
+  // Keeping this endpoint for API compatibility but it's not applicable
   app.post('/api/cancel-subscription', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      
-      if (!user?.stripeSubscriptionId) {
-        return res.status(404).json({ error: "No active subscription found" });
-      }
-
-      await stripe.subscriptions.cancel(user.stripeSubscriptionId);
-      await storage.updateUserProStatus(userId, false);
-      
-      res.json({ message: "Subscription cancelled successfully" });
+      res.status(400).json({ 
+        error: "This is a lifetime access purchase, not a subscription. Cancellation is not applicable." 
+      });
     } catch (error: any) {
-      console.error("Error cancelling subscription:", error);
+      console.error("Error in cancel endpoint:", error);
       res.status(500).json({ error: error.message });
     }
   });
   
-  // Stripe webhook for subscription status updates
+  // Stripe webhook for one-time payment events (lifetime Pro access)
   app.post('/api/stripe/webhook', async (req, res) => {
     const sig = req.headers['stripe-signature'];
     
@@ -676,38 +651,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
-    // Handle subscription events
+    // Handle payment events for lifetime Pro access
     try {
       switch (event.type) {
-        case 'customer.subscription.updated':
-        case 'customer.subscription.created': {
-          const subscription = event.data.object as Stripe.Subscription;
-          const customerId = subscription.customer as string;
-          
-          // Find user by Stripe customer ID
-          const customer = await stripe.customers.retrieve(customerId);
-          const userId = (customer as Stripe.Customer).metadata.userId;
+        case 'payment_intent.succeeded': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          const customerId = paymentIntent.customer as string;
+          const userId = paymentIntent.metadata.userId;
           
           if (userId) {
-            const isActive = subscription.status === 'active' || subscription.status === 'trialing';
-            const periodEnd = (subscription as any).current_period_end;
-            const expiresAt = periodEnd ? new Date(periodEnd * 1000) : undefined;
-            
-            await storage.updateUserProStatus(userId, isActive, expiresAt);
+            // Grant lifetime Pro access
+            await storage.updateUserProStatus(userId, true);
+            console.log(`✅ Granted lifetime Pro access to user ${userId}`);
           }
           break;
         }
         
-        case 'customer.subscription.deleted': {
-          const subscription = event.data.object as Stripe.Subscription;
-          const customerId = subscription.customer as string;
-          
-          const customer = await stripe.customers.retrieve(customerId);
-          const userId = (customer as Stripe.Customer).metadata.userId;
-          
-          if (userId) {
-            await storage.updateUserProStatus(userId, false);
-          }
+        case 'payment_intent.payment_failed': {
+          const paymentIntent = event.data.object as Stripe.PaymentIntent;
+          console.error(`❌ Payment failed for user ${paymentIntent.metadata.userId}`);
           break;
         }
       }
