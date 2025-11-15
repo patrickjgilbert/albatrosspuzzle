@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown } from "lucide-react";
-import { Link } from "wouter";
+import { RotateCcw, HelpCircle as HelpIcon, LogOut, Trophy, Crown, AlertCircle } from "lucide-react";
+import { Link, useRoute } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
 import PuzzleStatement from "@/components/PuzzleStatement";
 import ChatMessage, { type MessageType, type ResponseType } from "@/components/ChatMessage";
@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { AskQuestionResponse, Discovery, GameMessage as DBGameMessage, GameSession } from "@shared/schema";
+import type { AskQuestionResponse, Discovery, GameMessage as DBGameMessage, GameSession, Puzzle } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
 interface Message {
@@ -25,13 +25,6 @@ interface Message {
   content: string;
   response?: ResponseType;
 }
-
-const PUZZLE_STATEMENT =
-  "A man walks into a restaurant, orders the albatross soup, takes one bite of it, puts his spoon down, walks out of the restaurant, and shoots himself.";
-
-// Note: puzzleId will be hardcoded to Albatross for now
-// In future: load from route params or puzzle selection page
-const ALBATROSS_PUZZLE_ID = "albatross"; // Will be resolved by server
 
 export default function Game() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,14 +38,34 @@ export default function Game() {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Extract slug from URL params, default to "albatross" for backward compatibility
+  const [match, params] = useRoute("/game/:slug");
+  const puzzleSlug = params?.slug || "albatross";
+
+  // Load puzzle data
+  const { data: puzzle, isLoading: puzzleLoading, error: puzzleError } = useQuery<Puzzle>({
+    queryKey: ["/api/puzzles", puzzleSlug],
+    queryFn: async () => {
+      const response = await fetch(`/api/puzzles/${puzzleSlug}`);
+      if (!response.ok) {
+        const error = await response.json();
+        const err = new Error(error.message || "Failed to load puzzle") as Error & { status?: number };
+        err.status = response.status;
+        throw err;
+      }
+      return response.json();
+    },
+  });
+
   // Load existing game session on mount
   const { data: session, isLoading: sessionLoading } = useQuery<GameSession>({
-    queryKey: ["/api/session", ALBATROSS_PUZZLE_ID],
+    queryKey: ["/api/session", puzzleSlug],
     queryFn: async () => {
-      const response = await fetch(`/api/session/${ALBATROSS_PUZZLE_ID}`);
+      const response = await fetch(`/api/session/${puzzleSlug}`);
       if (!response.ok) throw new Error("Failed to load session");
       return response.json();
     },
+    enabled: !!puzzle,
   });
 
   // Hydrate local state from loaded session
@@ -111,7 +124,7 @@ export default function Game() {
         },
         body: JSON.stringify({
           sessionId,
-          puzzleId: ALBATROSS_PUZZLE_ID,
+          puzzleId: puzzleSlug,
           question,
         }),
       });
@@ -176,7 +189,7 @@ export default function Game() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          puzzleId: ALBATROSS_PUZZLE_ID,
+          puzzleId: puzzleSlug,
         }),
       });
 
@@ -206,8 +219,8 @@ export default function Game() {
     }
   };
 
-  // Show loading while session is being loaded
-  if (sessionLoading) {
+  // Show loading while puzzle or session is being loaded
+  if (puzzleLoading || sessionLoading) {
     return (
       <div className="h-screen flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
@@ -215,12 +228,57 @@ export default function Game() {
     );
   }
 
+  // Handle puzzle errors (404 or 403)
+  if (puzzleError) {
+    const error = puzzleError as Error & { status?: number };
+    const is403 = error.status === 403;
+    const is404 = error.status === 404;
+
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <div className="max-w-md mx-auto px-6 text-center space-y-4">
+          <AlertCircle className="w-16 h-16 mx-auto text-destructive" />
+          <h1 className="text-2xl font-semibold">
+            {is403 ? "Pro Puzzle" : is404 ? "Puzzle Not Found" : "Error"}
+          </h1>
+          <p className="text-muted-foreground">
+            {is403 
+              ? "This puzzle requires a Pro subscription to access."
+              : is404 
+              ? "The puzzle you're looking for doesn't exist."
+              : error.message || "Failed to load puzzle. Please try again later."}
+          </p>
+          <div className="flex gap-3 justify-center pt-4">
+            {is403 && (
+              <Button asChild data-testid="button-upgrade">
+                <Link href="/subscribe">
+                  <Crown className="w-4 h-4 mr-2" />
+                  Upgrade to Pro
+                </Link>
+              </Button>
+            )}
+            <Button variant="outline" asChild data-testid="button-back">
+              <Link href="/puzzles">
+                Browse Puzzles
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Ensure puzzle is loaded before rendering
+  if (!puzzle) {
+    return null;
+  }
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <header className="flex items-center justify-between h-16 px-4 md:px-6 border-b border-border flex-shrink-0">
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-semibold" data-testid="text-title">
-            The Albatross Puzzle
+            {puzzle.title}
           </h1>
           {progress.discovered > 0 && (
             <div className="text-sm text-muted-foreground" data-testid="text-progress">
@@ -297,7 +355,7 @@ export default function Game() {
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="max-w-3xl mx-auto w-full px-4 md:px-6 pt-4 pb-2 space-y-2 flex-shrink-0">
-          <PuzzleStatement statement={PUZZLE_STATEMENT} />
+          <PuzzleStatement statement={puzzle.prompt} />
           <DetectiveBoard discoveries={discoveries} />
         </div>
 

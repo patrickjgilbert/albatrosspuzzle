@@ -9,6 +9,7 @@ import Landing from "@/pages/landing";
 import Leaderboard from "@/pages/leaderboard";
 import Subscribe from "@/pages/subscribe";
 import AdminPage from "@/pages/admin";
+import PuzzlesPage from "@/pages/puzzles";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -28,6 +29,10 @@ function Router() {
       {/* Admin route - accessible regardless of auth status */}
       <Route path="/admin" component={AdminPage} />
       
+      {/* Game routes - accessible to both guests and authenticated users */}
+      <Route path="/game/:slug" component={Game} />
+      <Route path="/game" component={Game} />
+      
       {!isAuthenticated ? (
         <>
           <Route path="/" component={Landing} />
@@ -35,10 +40,10 @@ function Router() {
         </>
       ) : (
         <>
-          <Route path="/" component={Game} />
+          <Route path="/" component={PuzzlesPage} />
+          <Route path="/puzzles" component={PuzzlesPage} />
           <Route path="/leaderboard" component={Leaderboard} />
           <Route path="/subscribe" component={Subscribe} />
-          {/* Future routes: /puzzles, /profile */}
         </>
       )}
       <Route component={NotFound} />
