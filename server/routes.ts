@@ -771,29 +771,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // PUZZLE ROUTES
   // ============================================================================
   
-  app.get('/api/puzzles', isAuthenticated, async (req: any, res) => {
+  app.get('/api/puzzles', async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
+      const isAuthenticated = !!req.user;
       
-      // If user is pro, show all puzzles. Otherwise, only free puzzles
-      const puzzles = user?.isPro 
-        ? await storage.getActivePuzzles()
-        : await storage.getFreePuzzles();
-      
-      res.json(puzzles);
+      if (isAuthenticated) {
+        const userId = req.user.claims.sub;
+        const user = await storage.getUser(userId);
+        
+        // If user is pro, show all puzzles. Otherwise, only free puzzles
+        const puzzles = user?.isPro 
+          ? await storage.getActivePuzzles()
+          : await storage.getFreePuzzles();
+        
+        res.json(puzzles);
+      } else {
+        // Guests only see free puzzles
+        const puzzles = await storage.getFreePuzzles();
+        res.json(puzzles);
+      }
     } catch (error) {
       console.error("Error fetching puzzles:", error);
       res.status(500).json({ message: "Failed to fetch puzzles" });
     }
   });
 
-  app.get('/api/puzzles/:puzzleId', isAuthenticated, async (req: any, res) => {
+  app.get('/api/puzzles/:puzzleId', async (req: any, res) => {
     try {
-      const puzzle = await storage.getPuzzleById(req.params.puzzleId);
+      // Use resolvePuzzle to handle both slugs and IDs
+      const puzzle = await resolvePuzzle(req.params.puzzleId);
       if (!puzzle) {
         return res.status(404).json({ message: "Puzzle not found" });
       }
+      
+      // Check if guest is trying to access a pro puzzle
+      const isAuthenticated = !!req.user;
+      if (!isAuthenticated && !puzzle.isFree) {
+        return res.status(403).json({
+          message: "This puzzle requires a Pro subscription. Please sign in or subscribe."
+        });
+      }
+      
       res.json(puzzle);
     } catch (error) {
       console.error("Error fetching puzzle:", error);
