@@ -11,10 +11,10 @@ import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 
-if (!import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: TESTING_VITE_STRIPE_PUBLIC_KEY');
+if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
+  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
 }
-const stripePromise = loadStripe(import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY);
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 const SubscribeForm = () => {
   const stripe = useStripe();
@@ -259,8 +259,8 @@ export default function Subscribe() {
     return null; // Should never reach here due to guards above, but TypeScript safety
   }
 
-  // Detect test mode (always true since we're using test keys)
-  const isTestMode = import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY?.includes('pk_test');
+  // Detect test mode
+  const isTestMode = import.meta.env.VITE_STRIPE_PUBLIC_KEY?.includes('pk_test');
 
   return (
     <div className="min-h-screen bg-background">
