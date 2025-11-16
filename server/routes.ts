@@ -32,10 +32,10 @@ function sanitizeUser(user: User) {
   return safeUser;
 }
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+if (!process.env.TESTING_STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: TESTING_STRIPE_SECRET_KEY');
 }
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.TESTING_STRIPE_SECRET_KEY);
 
 // ============================================================================
 // PUZZLE SEEDING - Albatross Puzzle Data
