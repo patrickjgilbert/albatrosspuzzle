@@ -6,6 +6,15 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
+**Subscribe Page Authentication Fix (November 17, 2025)**
+- Fixed subscribe page showing confusing "401 Unauthorized" error for unauthenticated users
+- Added authentication check before initializing Stripe payment
+- Unauthenticated users now see friendly login prompt with Pro benefits list
+- "Log In to Upgrade" button redirects to Replit Auth flow
+- Added session expiry detection: retry button checks auth and shows login prompt if session expired
+- All states properly handled: unauthenticated, loading, ready, already-pro, error
+- End-to-end tests passing for both guest and authenticated flows
+
 **Critical Bug Fixes & Guest Access (November 17, 2025)**
 - Fixed critical authentication bug: useAuth hook now handles 401 responses gracefully for guest users
 - Updated useAuth to use `getQueryFn({ on401: "returnNull" })` preventing infinite loading for guests

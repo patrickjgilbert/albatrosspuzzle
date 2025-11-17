@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Check, CreditCard, LogIn } from "lucide-react";
 import { Link } from "wouter";
-import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
+import { apiRequest, parseJsonResponse, queryClient } from "@/lib/queryClient";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/hooks/useAuth";
@@ -114,6 +114,38 @@ export default function Subscribe() {
       return;
     }
 
+    // Fetch fresh auth state (fetchQuery returns the data directly, not just from cache)
+    let freshAuthData;
+    try {
+      freshAuthData = await queryClient.fetchQuery({
+        queryKey: ["/api/auth/user"],
+        queryFn: async () => {
+          const res = await fetch("/api/auth/user", { credentials: "include" });
+          if (res.status === 401) {
+            return null; // Session expired or not authenticated
+          }
+          if (!res.ok) {
+            throw new Error(`Auth check failed: ${res.status}`);
+          }
+          return await res.json();
+        },
+      });
+    } catch (error: any) {
+      // If auth check fails with non-401 error, treat as payment error (not auth issue)
+      if (import.meta.env.DEV) {
+        console.error("Auth refetch error:", error);
+      }
+      setErrorMessage("Unable to verify authentication. Please try again.");
+      setStatus("error");
+      return;
+    }
+    
+    // Check authentication with fresh state before attempting payment initialization
+    if (!freshAuthData) {
+      setStatus("unauthenticated");
+      return;
+    }
+
     // Reset state for clean initialization
     requestInFlightRef.current = true;
     setIsRetrying(true);
@@ -154,14 +186,29 @@ export default function Subscribe() {
       if (import.meta.env.DEV) {
         console.error("Payment initialization error:", error);
       }
-      setClientSecret(""); // Clear on error
-      setErrorMessage(error.message || "Failed to initialize payment. Please try again.");
-      setStatus("error");
-      toast({
-        title: "Error",
-        description: error.message || "Failed to initialize payment",
-        variant: "destructive",
-      });
+      
+      // Detect 401 Unauthorized by checking if error message starts with "401:"
+      // apiRequest throws errors in format: "${status}: ${text}"
+      const is401 = error.message?.startsWith("401:");
+      
+      if (is401) {
+        setClientSecret("");
+        setStatus("unauthenticated");
+        toast({
+          title: "Session Expired",
+          description: "Please log in again to continue.",
+          variant: "destructive",
+        });
+      } else {
+        setClientSecret(""); // Clear on error
+        setErrorMessage(error.message || "Failed to initialize payment. Please try again.");
+        setStatus("error");
+        toast({
+          title: "Error",
+          description: error.message || "Failed to initialize payment",
+          variant: "destructive",
+        });
+      }
     } finally {
       requestInFlightRef.current = false;
       setIsRetrying(false);
