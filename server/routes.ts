@@ -1394,12 +1394,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Resolve puzzle from slug or ID
       const puzzle = await resolvePuzzle(puzzleId);
       
-      // Get user ID (authenticated user or guest)
+      // Determine if authenticated and user exists in DB
       let userId: string;
+      let isAuthenticated = false;
+      
       if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
-        userId = req.user.claims.sub;
+        const authUserId = req.user.claims.sub;
+        const user = await storage.getUser(authUserId);
+        
+        if (user) {
+          // User exists in DB, use authenticated session
+          userId = authUserId;
+          isAuthenticated = true;
+        } else {
+          // Auth claims exist but user not in DB (e.g., test scenario)
+          // Treat as guest
+          userId = req.cookies.guestId || crypto.randomUUID();
+          if (!req.cookies.guestId) {
+            res.cookie('guestId', userId, {
+              httpOnly: true,
+              secure: req.secure || process.env.NODE_ENV === 'production',
+              sameSite: 'lax',
+              maxAge: 365 * 24 * 60 * 60 * 1000
+            });
+          }
+        }
       } else {
-        // For guests, use cookie-based guest ID
+        // No auth, use guest system
         userId = req.cookies.guestId;
         if (!userId) {
           userId = crypto.randomUUID();
@@ -1407,13 +1428,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
             httpOnly: true,
             secure: req.secure || process.env.NODE_ENV === 'production',
             sameSite: 'lax',
-            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+            maxAge: 365 * 24 * 60 * 60 * 1000
           });
         }
       }
       
-      // Create new session (old ones remain in DB for history)
-      const session = await storage.createGameSession(userId, puzzle.id);
+      // Create new session based on auth status
+      const session = isAuthenticated
+        ? await storage.createGameSession(userId, puzzle.id)
+        : await storage.createGuestSession(userId, puzzle.id);
       
       res.json({ 
         sessionId: session.id,
