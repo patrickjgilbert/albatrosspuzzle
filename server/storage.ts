@@ -35,6 +35,7 @@ export interface IStorage {
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
+  deleteUser(userId: string): Promise<void>;
   getAllGameSessions(): Promise<GameSession[]>;
   getAdminStats(): Promise<{
     totalUsers: number;
@@ -181,6 +182,14 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    // Delete all user's game sessions first (foreign key constraint)
+    await db.delete(gameSessions).where(eq(gameSessions.userId, userId));
+    
+    // Delete the user
+    await db.delete(users).where(eq(users.id, userId));
   }
 
   async getAllGameSessions(): Promise<GameSession[]> {

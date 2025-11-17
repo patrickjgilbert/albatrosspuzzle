@@ -10,6 +10,7 @@ import Leaderboard from "@/pages/leaderboard";
 import Subscribe from "@/pages/subscribe";
 import AdminPage from "@/pages/admin";
 import PuzzlesPage from "@/pages/puzzles";
+import AccountSettings from "@/pages/account-settings";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -41,6 +42,9 @@ function Router() {
       
       {/* Subscription - accessible to everyone (guests will be prompted to register) */}
       <Route path="/subscribe" component={Subscribe} />
+      
+      {/* Account settings - only for authenticated users */}
+      <Route path="/account/settings" component={AccountSettings} />
       
       {!isAuthenticated ? (
         <>

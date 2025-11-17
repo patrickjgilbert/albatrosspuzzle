@@ -775,6 +775,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Logout (JSON endpoint for frontend)
+  app.post('/api/auth/logout', async (req, res) => {
+    try {
+      req.logout((err) => {
+        if (err) {
+          console.error("Logout error:", err);
+          return res.status(500).json({ message: "Logout failed" });
+        }
+        res.json({ message: "Logout successful" });
+      });
+    } catch (error) {
+      console.error("Logout error:", error);
+      res.status(500).json({ message: "Logout failed" });
+    }
+  });
+
+  // ============================================================================
+  // ACCOUNT MANAGEMENT ROUTES
+  // ============================================================================
+
+  // Delete account
+  app.delete('/api/account/delete', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      
+      // Delete all user data
+      await storage.deleteUser(userId);
+      
+      // Logout user
+      req.logout((err: any) => {
+        if (err) {
+          console.error("Logout after delete error:", err);
+        }
+        res.json({ message: "Account deleted successfully" });
+      });
+    } catch (error) {
+      console.error("Account deletion error:", error);
+      res.status(500).json({ message: "Failed to delete account" });
+    }
+  });
+
   // ============================================================================
   // PUZZLE ROUTES
   // ============================================================================

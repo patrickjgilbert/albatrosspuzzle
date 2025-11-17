@@ -12,7 +12,13 @@ import AccountPromptModal from "@/components/AccountPromptModal";
 import ThemeToggle from "@/components/ThemeToggle";
 import { DetectiveBoard } from "@/components/DetectiveBoard";
 import { AppLogo } from "@/components/AppLogo";
+import { UserAccountDropdown } from "@/components/UserAccountDropdown";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Popover,
   PopoverContent,
@@ -351,34 +357,39 @@ export default function Game() {
               </Link>
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            data-testid="button-leaderboard"
-          >
-            <Link href="/leaderboard">
-              <Trophy className="w-5 h-5" />
-            </Link>
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleReset}
-            data-testid="button-reset"
-          >
-            <RotateCcw className="w-5 h-5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            asChild
-            data-testid="button-logout"
-          >
-            <a href="/api/logout">
-              <LogOut className="w-5 h-5" />
-            </a>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                asChild
+                data-testid="button-leaderboard"
+              >
+                <Link href="/leaderboard">
+                  <Trophy className="w-5 h-5" />
+                </Link>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Leaderboard</p>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleReset}
+                data-testid="button-reset"
+              >
+                <RotateCcw className="w-5 h-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Reset puzzle</p>
+            </TooltipContent>
+          </Tooltip>
+          <UserAccountDropdown />
           <ThemeToggle />
         </div>
       </header>

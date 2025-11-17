@@ -7,6 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Lock, Play, Trophy } from "lucide-react";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import { UserAccountDropdown } from "@/components/UserAccountDropdown";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Puzzle {
   id: string;
@@ -54,13 +60,20 @@ export default function PuzzlesPage() {
             </div>
             <div className="flex items-center gap-2">
               {isAuthenticated && (
-                <Link href="/leaderboard">
-                  <Button variant="outline" data-testid="button-leaderboard">
-                    <Trophy className="h-4 w-4 mr-2" />
-                    Leaderboard
-                  </Button>
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" asChild data-testid="button-leaderboard">
+                      <Link href="/leaderboard">
+                        <Trophy className="h-5 w-5" />
+                      </Link>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Leaderboard</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
+              <UserAccountDropdown />
               <ThemeToggle />
             </div>
           </div>

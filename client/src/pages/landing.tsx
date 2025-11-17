@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import { UserAccountDropdown } from "@/components/UserAccountDropdown";
 import { Link } from "wouter";
 import { Play } from "lucide-react";
 
@@ -13,9 +14,7 @@ export default function Landing() {
         <div className="flex items-center justify-between">
           <AppLogo />
           <div className="flex items-center gap-2">
-            <Button asChild data-testid="button-login">
-              <a href="/api/login">Log In</a>
-            </Button>
+            <UserAccountDropdown />
             <ThemeToggle />
           </div>
         </div>
