@@ -9,6 +9,7 @@ import {
   type Discovery,
   type GameMessage,
   DISCOVERY_KEYS,
+  DISCOVERY_LABELS,
   MIN_REQUIRED_TOPICS,
   CRITICAL_TOPICS,
   getDiscoveryTopic,
@@ -1057,7 +1058,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const answer = normalizeAnswer(validated.data.answer);
       const explanation = validated.data.explanation;
       let discoveryKey = validated.data.discoveryKey;
-      let discoveryLabel = validated.data.discoveryLabel;
+      // Always use predefined labels to prevent spoilers
+      let discoveryLabel = discoveryKey ? DISCOVERY_LABELS[discoveryKey as DiscoveryKey] : undefined;
 
       // Server-side safety net: If AI answered YES but missed a discovery, catch it
       if (answer === "YES" && !discoveryKey) {
@@ -1261,6 +1263,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           discoveryKey = "POWERFUL_TRIBUTE";
           discoveryLabel = "It was a powerful tribute";
         }
+        
+        // Override with predefined label if we found a discoveryKey in safety net
+        if (discoveryKey) {
+          discoveryLabel = DISCOVERY_LABELS[discoveryKey as DiscoveryKey];
+        }
       }
 
       const playerMessage: GameMessage = {
@@ -1380,13 +1387,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/reset", isAuthenticated, async (req: any, res) => {
+  app.post("/api/reset", async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
       const { puzzleId } = req.body;
       
       // Resolve puzzle from slug or ID
       const puzzle = await resolvePuzzle(puzzleId);
+      
+      // Get user ID (authenticated user or guest)
+      let userId: string;
+      if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
+        userId = req.user.claims.sub;
+      } else {
+        // For guests, use cookie-based guest ID
+        userId = req.cookies.guestId;
+        if (!userId) {
+          userId = crypto.randomUUID();
+          res.cookie('guestId', userId, {
+            httpOnly: true,
+            secure: req.secure || process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 365 * 24 * 60 * 60 * 1000 // 1 year
+          });
+        }
+      }
       
       // Create new session (old ones remain in DB for history)
       const session = await storage.createGameSession(userId, puzzle.id);

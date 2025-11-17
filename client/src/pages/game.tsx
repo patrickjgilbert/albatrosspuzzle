@@ -344,19 +344,6 @@ export default function Game() {
               </div>
             </PopoverContent>
           </Popover>
-          {!user?.isPro && (
-            <Button
-              variant="default"
-              size="sm"
-              asChild
-              data-testid="button-upgrade"
-            >
-              <Link href="/subscribe">
-                <Crown className="w-4 h-4 mr-2" />
-                Upgrade to Pro
-              </Link>
-            </Button>
-          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -389,6 +376,19 @@ export default function Game() {
               <p>Reset puzzle</p>
             </TooltipContent>
           </Tooltip>
+          {!isAuthenticated && (
+            <Button variant="outline" size="sm" asChild data-testid="button-header-login">
+              <Link href="/login">Log In</Link>
+            </Button>
+          )}
+          {isAuthenticated && !user?.isPro && (
+            <Button variant="ghost" size="sm" asChild data-testid="button-header-upgrade">
+              <Link href="/subscribe">
+                <Crown className="w-4 h-4 mr-2" />
+                Upgrade to Pro
+              </Link>
+            </Button>
+          )}
           <UserAccountDropdown />
           <ThemeToggle />
         </div>

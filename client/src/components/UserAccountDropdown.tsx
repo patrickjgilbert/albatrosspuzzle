@@ -134,7 +134,7 @@ export function UserAccountDropdown() {
 
           {isAuthenticated ? (
             <>
-              <DropdownMenuItem asChild data-testid="menu-item-settings">
+              <DropdownMenuItem asChild data-testid="menu-item-settings" className="cursor-pointer">
                 <Link href="/account/settings">
                   <Settings className="w-4 h-4 mr-2" />
                   Account Settings
@@ -142,7 +142,7 @@ export function UserAccountDropdown() {
               </DropdownMenuItem>
 
               {!user?.isPro && (
-                <DropdownMenuItem asChild data-testid="menu-item-upgrade">
+                <DropdownMenuItem asChild data-testid="menu-item-upgrade" className="cursor-pointer">
                   <Link href="/subscribe">
                     <Crown className="w-4 h-4 mr-2" />
                     Upgrade to Pro
@@ -156,6 +156,7 @@ export function UserAccountDropdown() {
                 onClick={handleLogout}
                 disabled={logoutMutation.isPending}
                 data-testid="menu-item-logout"
+                className="cursor-pointer"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Log Out
@@ -163,7 +164,7 @@ export function UserAccountDropdown() {
 
               <DropdownMenuItem
                 onClick={() => setShowDeleteDialog(true)}
-                className="text-destructive focus:text-destructive"
+                className="text-destructive focus:text-destructive cursor-pointer"
                 data-testid="menu-item-delete"
               >
                 <Trash2 className="w-4 h-4 mr-2" />
@@ -171,11 +172,11 @@ export function UserAccountDropdown() {
               </DropdownMenuItem>
             </>
           ) : (
-            <DropdownMenuItem asChild data-testid="menu-item-login">
-              <a href="/api/login">
+            <DropdownMenuItem asChild data-testid="menu-item-login" className="cursor-pointer">
+              <Link href="/login">
                 <User className="w-4 h-4 mr-2" />
                 Sign Up / Log In
-              </a>
+              </Link>
             </DropdownMenuItem>
           )}
         </DropdownMenuContent>

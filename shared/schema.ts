@@ -352,6 +352,73 @@ export const MIN_REQUIRED_TOPICS = 6;
 
 export type DiscoveryStage = "base" | "evolved";
 
+// Context-aware discovery labels that don't reveal future discoveries
+export const DISCOVERY_LABELS: Record<DiscoveryKey, string> = {
+  // Albatross Puzzle - Labels that don't spoil the story
+  VESSEL: "Traveling by boat",
+  VESSEL_SANK: "The boat sank",
+  FAMILY: "His family was with him",
+  FAMILY_DIED: "His family did not make it", // Neutral - doesn't say "survive" which implies disaster
+  ISLAND: "They reached an island",
+  STRANDED: "They were stranded",
+  NO_FOOD: "Food was scarce",
+  CANNIBALISM: "They resorted to eating the dead", // Only after discovery
+  DECEPTION: "He was deceived",
+  RESCUED: "They were eventually rescued",
+  RESTAURANT: "At the restaurant",
+  ALBATROSS_REVEAL: "Albatross meat at the restaurant",
+  GUILT: "Overwhelming guilt",
+  SUICIDE: "He took his own life",
+  
+  // Lighthouse Keeper Puzzle
+  LIGHTHOUSE_JOB: "Lighthouse keeper",
+  LAMP_BROKE: "Lamp went out",
+  SHIP_CRASH: "Ship crashed",
+  SON_DIED: "His son died",
+  NEGLIGENCE: "Felt responsible",
+  RESPONSIBILITY: "Failed duty",
+  
+  // Last Phone Call Puzzle
+  DAUGHTER: "His daughter",
+  KIDNAPPED: "Was kidnapped years ago",
+  YEARS_AGO: "Many years passed",
+  NEVER_FOUND: "Never found",
+  SEARCHING: "Never stopped searching",
+  DETECTIVE_CALL: "Call from detective",
+  FOUND_ALIVE: "She was found alive",
+  REUNION: "Father and daughter reunited",
+  
+  // Mirror Room Puzzle
+  CON_ARTIST: "A con artist",
+  FAKE_IDENTITIES: "Used fake identities",
+  PRETENDING: "Lived as someone else",
+  THERAPY_ROOM: "Therapy session",
+  TRUE_SELF: "Confronted true identity",
+  REAL_FACE: "Saw real self",
+  CONFRONTATION: "Moment of truth",
+  REDEMPTION: "Path to redemption",
+  
+  // Empty Restaurant Puzzle
+  NUCLEAR_PLANT: "Nuclear plant nearby",
+  EMERGENCY_SIRENS: "Emergency warning",
+  REACTOR_MELTDOWN: "Reactor failure",
+  EVACUATION: "Immediate evacuation",
+  LEFT_IMMEDIATELY: "Everyone fled",
+  TOWN_ABANDONED: "Ghost town",
+  EXCLUSION_ZONE: "Forbidden area",
+  FROZEN_TIME: "Time stood still",
+  
+  // Silent Concert Puzzle
+  MEMORIAL: "Memorial concert",
+  MUSICIAN_DIED: "Beloved musician died",
+  TRIBUTE: "Tribute performance",
+  SILENCE_PERFORMANCE: "Silent performance",
+  ABSENCE: "Absence speaks louder",
+  BELOVED_ARTIST: "Legendary artist",
+  TRAGIC_DEATH: "Tragic loss",
+  POWERFUL_TRIBUTE: "Moving tribute",
+};
+
 export interface Discovery {
   key: DiscoveryKey;
   topic: string;

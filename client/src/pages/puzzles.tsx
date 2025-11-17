@@ -5,9 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Lock, Play, Trophy } from "lucide-react";
-import { AppLogo } from "@/components/AppLogo";
-import ThemeToggle from "@/components/ThemeToggle";
-import { UserAccountDropdown } from "@/components/UserAccountDropdown";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Tooltip,
   TooltipContent,
@@ -45,40 +43,15 @@ export default function PuzzlesPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-4 flex-1">
-              <AppLogo />
-              <div className="h-6 w-px bg-border" />
-              <div>
-                <h1 className="text-3xl font-bold" data-testid="text-page-title">Lateral Thinking Puzzles</h1>
-                <p className="text-muted-foreground mt-1">
-                  Solve mysterious scenarios through yes/no questions
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {isAuthenticated && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" asChild data-testid="button-leaderboard">
-                      <Link href="/leaderboard">
-                        <Trophy className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Leaderboard</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              <UserAccountDropdown />
-              <ThemeToggle />
-            </div>
-          </div>
+      <PageHeader>
+        <div className="h-6 w-px bg-border" />
+        <div>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">Lateral Thinking Puzzles</h1>
+          <p className="text-sm text-muted-foreground">
+            Solve mysterious scenarios through yes/no questions
+          </p>
         </div>
-      </div>
+      </PageHeader>
 
       <div className="container mx-auto px-4 py-8">
         {!user?.isPro && (

@@ -360,10 +360,10 @@ export default function Subscribe() {
                 </ul>
               </div>
               <Button asChild className="w-full" size="lg" data-testid="button-login">
-                <a href="/api/auth/login">
+                <Link href="/login">
                   <LogIn className="w-4 h-4 mr-2" />
                   Log In to Upgrade
-                </a>
+                </Link>
               </Button>
               <Button asChild variant="outline" className="w-full">
                 <Link href="/">Play Free Puzzle</Link>

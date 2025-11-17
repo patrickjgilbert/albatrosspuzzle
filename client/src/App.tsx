@@ -11,6 +11,7 @@ import Subscribe from "@/pages/subscribe";
 import AdminPage from "@/pages/admin";
 import PuzzlesPage from "@/pages/puzzles";
 import AccountSettings from "@/pages/account-settings";
+import LoginPage from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -29,6 +30,9 @@ function Router() {
     <Switch>
       {/* Admin route - accessible regardless of auth status */}
       <Route path="/admin" component={AdminPage} />
+      
+      {/* Login/Register - accessible to everyone */}
+      <Route path="/login" component={LoginPage} />
       
       {/* Game routes - accessible to both guests and authenticated users */}
       <Route path="/game/:slug" component={Game} />

@@ -1,8 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { AppLogo } from "@/components/AppLogo";
-import ThemeToggle from "@/components/ThemeToggle";
-import { UserAccountDropdown } from "@/components/UserAccountDropdown";
+import { PageHeader } from "@/components/PageHeader";
 import { Link } from "wouter";
 import { Play } from "lucide-react";
 
@@ -10,15 +8,7 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted">
       {/* Header */}
-      <header className="container mx-auto px-4 py-6">
-        <div className="flex items-center justify-between">
-          <AppLogo />
-          <div className="flex items-center gap-2">
-            <UserAccountDropdown />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <PageHeader />
 
       {/* Hero Section */}
       <main className="container mx-auto px-4 py-20">
@@ -41,7 +31,7 @@ export default function Landing() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild data-testid="button-get-started">
-              <a href="/api/login">Sign Up & Save Progress</a>
+              <Link href="/login">Sign Up & Save Progress</Link>
             </Button>
           </div>
 
