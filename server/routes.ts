@@ -1409,6 +1409,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Confirm payment after Stripe redirect (for development where webhooks don't work)
+  app.post('/api/confirm-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { paymentIntentId } = req.body;
+      
+      if (!paymentIntentId) {
+        return res.status(400).json({ error: "Payment intent ID required" });
+      }
+      
+      // Retrieve payment intent from Stripe to verify status
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      // Verify this payment belongs to the current user
+      if (paymentIntent.metadata.userId !== userId) {
+        return res.status(403).json({ error: "Payment does not belong to current user" });
+      }
+      
+      // Check if payment succeeded
+      if (paymentIntent.status === 'succeeded') {
+        // Grant lifetime Pro access
+        await storage.updateUserProStatus(userId, true);
+        console.log(`✅ Granted lifetime Pro access to user ${userId} via payment confirmation`);
+        
+        return res.json({
+          success: true,
+          message: "Payment confirmed and Pro access granted",
+        });
+      } else {
+        return res.json({
+          success: false,
+          message: `Payment status: ${paymentIntent.status}`,
+          status: paymentIntent.status,
+        });
+      }
+    } catch (error: any) {
+      console.error("Error confirming payment:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
   // Note: No cancellation needed for one-time payments
   // Keeping this endpoint for API compatibility but it's not applicable
   app.post('/api/cancel-subscription', isAuthenticated, async (req: any, res) => {
