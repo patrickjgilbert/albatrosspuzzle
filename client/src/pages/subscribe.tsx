@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Check, CreditCard } from "lucide-react";
+import { Check, CreditCard, LogIn } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/hooks/useAuth";
 
 // Use test Stripe key in development, production key only when explicitly set
 // Default to test key unless MODE is explicitly "production"
@@ -96,7 +97,7 @@ const SubscribeForm = () => {
   );
 };
 
-type PageStatus = "loading" | "ready" | "already-pro" | "error";
+type PageStatus = "loading" | "ready" | "already-pro" | "error" | "unauthenticated";
 
 export default function Subscribe() {
   const [clientSecret, setClientSecret] = useState("");
@@ -105,6 +106,7 @@ export default function Subscribe() {
   const [isRetrying, setIsRetrying] = useState(false);
   const requestInFlightRef = useRef(false);
   const { toast} = useToast();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const initializePayment = async () => {
     // Prevent concurrent requests using ref (survives re-renders)
@@ -167,8 +169,20 @@ export default function Subscribe() {
   };
 
   useEffect(() => {
+    // Wait for auth check to complete before initializing payment
+    if (authLoading) {
+      return;
+    }
+    
+    // If not authenticated, show login prompt
+    if (!isAuthenticated) {
+      setStatus("unauthenticated");
+      return;
+    }
+    
+    // User is authenticated, initialize payment
     initializePayment();
-  }, []);
+  }, [authLoading, isAuthenticated]);
 
   // Show loading state
   if (status === "loading") {
@@ -183,6 +197,69 @@ export default function Subscribe() {
         </header>
         <div className="h-screen flex items-center justify-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" aria-label="Loading"/>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt for unauthenticated users
+  if (status === "unauthenticated") {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <AppLogo />
+              <div className="h-6 w-px bg-border" />
+              <h1 className="text-xl font-semibold">Upgrade to Pro</h1>
+            </div>
+            <ThemeToggle />
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-12 max-w-2xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LogIn className="w-5 h-5" />
+                Log In Required
+              </CardTitle>
+              <CardDescription>
+                You need to create an account or log in to upgrade to Pro and get lifetime access to all puzzles.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg bg-primary/10 border border-primary/20">
+                <p className="text-sm font-semibold mb-2">Pro Benefits:</p>
+                <ul className="text-sm space-y-1">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Access to all 6 lateral thinking puzzles</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Lifetime access - $1 one-time payment</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Progress saved across devices</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-primary" />
+                    <span>Early access to new puzzles</span>
+                  </li>
+                </ul>
+              </div>
+              <Button asChild className="w-full" size="lg" data-testid="button-login">
+                <a href="/api/auth/login">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Log In to Upgrade
+                </a>
+              </Button>
+              <Button asChild variant="outline" className="w-full">
+                <Link href="/">Play Free Puzzle</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
