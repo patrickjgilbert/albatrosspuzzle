@@ -35,6 +35,7 @@ export interface IStorage {
   
   // Admin operations
   getAllUsers(): Promise<User[]>;
+  updateUser(userId: string, data: { firstName?: string; lastName?: string }): Promise<User>;
   deleteUser(userId: string): Promise<void>;
   getAllGameSessions(): Promise<GameSession[]>;
   getAdminStats(): Promise<{
@@ -182,6 +183,27 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return await db.select().from(users).orderBy(desc(users.createdAt));
+  }
+
+  async updateUser(userId: string, data: { firstName?: string; lastName?: string }): Promise<User> {
+    // Build update object with only provided fields to avoid nulling out omitted fields
+    const updateData: Record<string, any> = {
+      updatedAt: new Date(),
+    };
+    
+    if (data.firstName !== undefined) {
+      updateData.firstName = data.firstName;
+    }
+    if (data.lastName !== undefined) {
+      updateData.lastName = data.lastName;
+    }
+    
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
   }
 
   async deleteUser(userId: string): Promise<void> {

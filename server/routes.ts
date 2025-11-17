@@ -795,6 +795,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ACCOUNT MANAGEMENT ROUTES
   // ============================================================================
 
+  // Update profile
+  const updateProfileSchema = z
+    .object({
+      firstName: z.string().optional(),
+      lastName: z.string().optional(),
+    })
+    .refine((data) => data.firstName !== undefined || data.lastName !== undefined, {
+      message: "At least one field (firstName or lastName) must be provided",
+    });
+
+  app.patch('/api/account/update', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const { firstName, lastName } = updateProfileSchema.parse(req.body);
+      
+      const updatedUser = await storage.updateUser(userId, { firstName, lastName });
+      
+      res.json({ user: sanitizeUser(updatedUser), message: "Profile updated successfully" });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid input", errors: error.errors });
+      }
+      console.error("Profile update error:", error);
+      res.status(500).json({ message: "Failed to update profile" });
+    }
+  });
+
   // Delete account
   app.delete('/api/account/delete', isAuthenticated, async (req: any, res) => {
     try {
