@@ -32,11 +32,12 @@ function sanitizeUser(user: User) {
   return safeUser;
 }
 
-// Use test Stripe keys in development, production keys in production
-const isDevelopment = process.env.NODE_ENV === 'development';
-const stripeSecretKey = isDevelopment 
-  ? (process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
-  : process.env.STRIPE_SECRET_KEY;
+// Use test Stripe keys in development, production keys only when explicitly set
+// Default to test keys unless NODE_ENV is explicitly "production"
+const isProduction = process.env.NODE_ENV === 'production';
+const stripeSecretKey = isProduction
+  ? process.env.STRIPE_SECRET_KEY
+  : (process.env.TESTING_STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY);
 
 if (!stripeSecretKey) {
   throw new Error('Missing required Stripe secret key');

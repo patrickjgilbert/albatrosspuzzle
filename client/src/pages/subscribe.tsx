@@ -11,11 +11,12 @@ import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 
-// Use test Stripe key in development, production key in production
-const isDevelopment = import.meta.env.DEV;
-const stripePublicKey = isDevelopment
-  ? (import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY)
-  : import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+// Use test Stripe key in development, production key only when explicitly set
+// Default to test key unless MODE is explicitly "production"
+const isProduction = import.meta.env.MODE === 'production';
+const stripePublicKey = isProduction
+  ? import.meta.env.VITE_STRIPE_PUBLIC_KEY
+  : (import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY);
 
 if (!stripePublicKey) {
   throw new Error('Missing required Stripe publishable key');

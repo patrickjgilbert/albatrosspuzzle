@@ -6,6 +6,17 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
+**Critical Bug Fixes & Guest Access (November 17, 2025)**
+- Fixed critical authentication bug: useAuth hook now handles 401 responses gracefully for guest users
+- Updated useAuth to use `getQueryFn({ on401: "returnNull" })` preventing infinite loading for guests
+- Fixed Stripe key mismatch: implemented environment-based key selection
+- Server defaults to test Stripe keys unless `NODE_ENV === "production"`
+- Client defaults to test Stripe keys unless `import.meta.env.MODE === "production"`
+- Ensures safe local development even when NODE_ENV is undefined
+- All changes validated through comprehensive end-to-end Playwright tests
+- Guest users can now access free puzzles without authentication
+- Stripe payment flow works correctly in both development (test mode) and production (live mode)
+
 **Admin Panel & Pro Puzzles (November 15, 2025)**
 - Created secure admin panel at /admin with environment-based credentials (ADMIN_USERNAME, ADMIN_PASSWORD)
 - Implemented session regeneration on login to prevent session fixation attacks
