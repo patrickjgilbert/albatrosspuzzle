@@ -11,10 +11,17 @@ import { apiRequest, parseJsonResponse } from "@/lib/queryClient";
 import { AppLogo } from "@/components/AppLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 
-if (!import.meta.env.VITE_STRIPE_PUBLIC_KEY) {
-  throw new Error('Missing required Stripe key: VITE_STRIPE_PUBLIC_KEY');
+// Use test Stripe key in development, production key in production
+const isDevelopment = import.meta.env.DEV;
+const stripePublicKey = isDevelopment
+  ? (import.meta.env.TESTING_VITE_STRIPE_PUBLIC_KEY || import.meta.env.VITE_STRIPE_PUBLIC_KEY)
+  : import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+
+if (!stripePublicKey) {
+  throw new Error('Missing required Stripe publishable key');
 }
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
+const stripePromise = loadStripe(stripePublicKey);
 
 const SubscribeForm = () => {
   const stripe = useStripe();
@@ -260,7 +267,7 @@ export default function Subscribe() {
   }
 
   // Detect test mode
-  const isTestMode = import.meta.env.VITE_STRIPE_PUBLIC_KEY?.includes('pk_test');
+  const isTestMode = stripePublicKey?.includes('pk_test');
 
   return (
     <div className="min-h-screen bg-background">
