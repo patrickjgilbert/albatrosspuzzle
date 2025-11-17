@@ -89,13 +89,9 @@ export default function AccountSettings() {
         description: "Your account has been permanently deleted.",
       });
 
-      // Invalidate auth cache
+      // Invalidate auth cache and redirect to home
       await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
-
-      // Redirect to home
-      setTimeout(() => {
-        setLocation("/");
-      }, 1000);
+      setLocation("/");
     } catch (error) {
       toast({
         title: "Deletion failed",
