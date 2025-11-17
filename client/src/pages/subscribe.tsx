@@ -43,7 +43,7 @@ const SubscribeForm = () => {
     const { error } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: `${window.location.origin}/?subscription=success`,
+        return_url: `${window.location.origin}/subscribe?payment_status=success`,
       },
     });
 
@@ -216,7 +216,7 @@ export default function Subscribe() {
   };
 
   useEffect(() => {
-    // Wait for auth check to complete before initializing payment
+    // Wait for auth check to complete
     if (authLoading) {
       return;
     }
@@ -227,7 +227,70 @@ export default function Subscribe() {
       return;
     }
     
-    // User is authenticated, initialize payment
+    // Check if we're returning from Stripe redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentIntent = urlParams.get('payment_intent');
+    const redirectStatus = urlParams.get('redirect_status');
+    
+    // Priority 1: Confirm payment if returning from Stripe
+    if (paymentIntent && redirectStatus === 'succeeded') {
+      // Prevent duplicate confirmations
+      if (requestInFlightRef.current) {
+        return;
+      }
+      
+      const confirmPayment = async () => {
+        try {
+          requestInFlightRef.current = true;
+          setStatus("loading");
+          
+          const response = await apiRequest("POST", "/api/confirm-payment", {
+            paymentIntentId: paymentIntent,
+          });
+          const data = await parseJsonResponse<{ success: boolean; message: string }>(response);
+          
+          if (data.success) {
+            // Clear URL params
+            window.history.replaceState({}, '', '/subscribe');
+            
+            // Invalidate auth cache to refresh Pro status
+            await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+            
+            setStatus("already-pro");
+            toast({
+              title: "Payment Successful! 🎉",
+              description: "You now have lifetime Pro access to all puzzles!",
+            });
+          } else {
+            setErrorMessage(data.message || "Payment confirmation failed");
+            setStatus("error");
+            toast({
+              title: "Payment Issue",
+              description: data.message || "Please contact support if payment was processed.",
+              variant: "destructive",
+            });
+          }
+        } catch (error: any) {
+          if (import.meta.env.DEV) {
+            console.error("Payment confirmation error:", error);
+          }
+          setErrorMessage(error.message || "Failed to confirm payment");
+          setStatus("error");
+          toast({
+            title: "Confirmation Error",
+            description: "Payment may have succeeded. Please refresh the page.",
+            variant: "destructive",
+          });
+        } finally {
+          requestInFlightRef.current = false;
+        }
+      };
+      
+      confirmPayment();
+      return; // Don't initialize payment if confirming
+    }
+    
+    // Priority 2: Initialize payment for new users
     initializePayment();
   }, [authLoading, isAuthenticated]);
 

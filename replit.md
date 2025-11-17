@@ -6,14 +6,21 @@ An interactive web-based lateral thinking puzzle game where players solve the cl
 
 ## Recent Changes (November 2025)
 
-**Subscribe Page Authentication Fix (November 17, 2025)**
-- Fixed subscribe page showing confusing "401 Unauthorized" error for unauthenticated users
-- Added authentication check before initializing Stripe payment
-- Unauthenticated users now see friendly login prompt with Pro benefits list
-- "Log In to Upgrade" button redirects to Replit Auth flow
-- Added session expiry detection: retry button checks auth and shows login prompt if session expired
-- All states properly handled: unauthenticated, loading, ready, already-pro, error
-- End-to-end tests passing for both guest and authenticated flows
+**Payment Processing & Authentication Fixes (November 17, 2025)**
+- Fixed critical payment confirmation bug: Stripe payments succeeded but Pro status never updated
+- Root cause: Webhooks don't work in localhost development (Stripe can't reach local server)
+- **Solution:** Client-side payment confirmation after Stripe redirect
+  - Added `/api/confirm-payment` endpoint that retrieves PaymentIntent from Stripe to verify status
+  - Frontend detects `payment_intent` in URL params after Stripe redirect
+  - Calls confirmation endpoint which grants Pro access if payment succeeded
+  - Priority-based useEffect ensures confirmation runs before payment initialization
+- Subscribe page authentication: Fixed "401 Unauthorized" error for unauthenticated users
+  - Added authentication check using `queryClient.fetchQuery` for fresh auth state
+  - Unauthenticated users see friendly login prompt with Pro benefits list
+  - Session expiry detection: retry button refetches auth and shows login prompt if expired
+  - All states properly handled: unauthenticated, loading, ready, already-pro, error
+- Payment flow now works correctly: payment → redirect → confirmation → Pro access granted
+- End-to-end tests passing for complete payment and authentication flows
 
 **Critical Bug Fixes & Guest Access (November 17, 2025)**
 - Fixed critical authentication bug: useAuth hook now handles 401 responses gracefully for guest users

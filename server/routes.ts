@@ -1416,8 +1416,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { paymentIntentId } = req.body;
       
       if (!paymentIntentId) {
+        console.error('[CONFIRM PAYMENT] Missing payment intent ID');
         return res.status(400).json({ error: "Payment intent ID required" });
       }
+      
+      console.log(`[CONFIRM PAYMENT] Processing payment confirmation for user ${userId}`);
       
       // Retrieve payment intent from Stripe to verify status
       const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
@@ -1437,7 +1440,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: true,
           message: "Payment confirmed and Pro access granted",
         });
+      } else if (paymentIntent.status === 'requires_action') {
+        console.log(`⏸️ Payment requires action for user ${userId}, status: ${paymentIntent.status}`);
+        return res.json({
+          success: false,
+          message: `Payment requires additional action. Please complete the payment flow.`,
+          status: paymentIntent.status,
+          requiresAction: true,
+        });
       } else {
+        console.log(`❌ Payment not succeeded for user ${userId}, status: ${paymentIntent.status}`);
         return res.json({
           success: false,
           message: `Payment status: ${paymentIntent.status}`,

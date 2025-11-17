@@ -36,6 +36,7 @@ export function getSession() {
     cookie: {
       httpOnly: true,
       secure: true,
+      sameSite: 'lax', // Explicitly set to 'lax' to preserve cookies through Stripe redirects
       maxAge: sessionTtl,
     },
   });
