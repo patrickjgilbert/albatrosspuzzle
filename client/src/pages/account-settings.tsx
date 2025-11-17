@@ -54,7 +54,7 @@ export default function AccountSettings() {
 
     setIsSaving(true);
     try {
-      await apiRequest("/api/account/update", "PATCH", {
+      await apiRequest("PATCH", "/api/account/update", {
         firstName: firstName.trim(),
         lastName: lastName.trim(),
       });
@@ -67,9 +67,11 @@ export default function AccountSettings() {
         description: "Your profile has been updated successfully.",
       });
     } catch (error) {
+      console.error("Profile update error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to update profile. Please try again.";
       toast({
         title: "Update failed",
-        description: "Failed to update profile. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
@@ -80,7 +82,7 @@ export default function AccountSettings() {
   const handleDeleteAccount = async () => {
     setIsDeleting(true);
     try {
-      await apiRequest("/api/account/delete", "DELETE");
+      await apiRequest("DELETE", "/api/account/delete");
 
       toast({
         title: "Account deleted",

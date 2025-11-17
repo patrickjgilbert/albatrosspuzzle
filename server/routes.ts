@@ -808,16 +808,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch('/api/account/update', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log("[PATCH /api/account/update] Request from user:", userId, "Body:", req.body);
+      
       const { firstName, lastName } = updateProfileSchema.parse(req.body);
+      console.log("[PATCH /api/account/update] Parsed data:", { firstName, lastName });
       
       const updatedUser = await storage.updateUser(userId, { firstName, lastName });
+      console.log("[PATCH /api/account/update] User updated successfully");
       
       res.json({ user: sanitizeUser(updatedUser), message: "Profile updated successfully" });
     } catch (error) {
       if (error instanceof z.ZodError) {
+        console.error("[PATCH /api/account/update] Validation error:", error.errors);
         return res.status(400).json({ message: "Invalid input", errors: error.errors });
       }
-      console.error("Profile update error:", error);
+      console.error("[PATCH /api/account/update] Error:", error);
       res.status(500).json({ message: "Failed to update profile" });
     }
   });

@@ -103,7 +103,9 @@ export function UserAccountDropdown() {
               {isAuthenticated ? (
                 <>
                   <div className="text-sm font-medium" data-testid="text-account-user">
-                    {user?.username || user?.email}
+                    {(user?.firstName && user?.lastName) 
+                      ? `${user.firstName} ${user.lastName}` 
+                      : user?.username || user?.email}
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge
